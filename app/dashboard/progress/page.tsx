@@ -14,9 +14,9 @@ export default function ProgressPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div><h1 className="font-heading text-2xl font-bold tracking-tight">My Progress</h1><p className="text-sm text-base-content/60">Track your milestones across campaigns</p></div>
+      <div><h1 className="font-heading text-2xl font-bold tracking-tight">{t("progress.title")}</h1><p className="text-sm text-base-content/60">{t("progress.subtitle")}</p></div>
       {myCampaigns.length === 0 ? (
-        <p className="text-sm text-base-content/60">You are not enrolled in any campaigns yet.</p>
+        <p className="text-sm text-base-content/60">{t("progress.none")}</p>
       ) : (
         myCampaigns.map((c) => (
           <Card key={c.id} className="border-base-300/50">

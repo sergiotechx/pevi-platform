@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNotifications } from "@/lib/notification-context"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n-context"
 import type { Notification } from "@/lib/mock-data"
 
 const typeIcons: Record<string, typeof Bell> = {
@@ -115,6 +116,7 @@ export function NotificationInbox() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, dismissNotification } = useNotifications()
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const { t } = useTranslation()
 
   const handleAction = (url: string) => {
     setOpen(false)
@@ -131,13 +133,13 @@ export function NotificationInbox() {
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
-          <span className="sr-only">Notifications ({unreadCount} unread)</span>
+          <span className="sr-only">{t("notifications.unread", { count: unreadCount })}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[380px] p-0 border-base-300/50" sideOffset={8}>
         <div className="flex items-center justify-between border-b border-base-300/50 px-4 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-base-content">Notifications</h3>
+            <h3 className="text-sm font-semibold text-base-content">{t("notifications.title")}</h3>
             {unreadCount > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold text-primary">
                 {unreadCount}
@@ -150,7 +152,7 @@ export function NotificationInbox() {
               className="inline-flex items-center gap-1 text-xs text-base-content/60 transition-colors hover:text-primary"
             >
               <CheckCheck className="h-3.5 w-3.5" />
-              Mark all read
+              {t("notifications.markAllRead")}
             </button>
           )}
         </div>
@@ -160,8 +162,8 @@ export function NotificationInbox() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-base-300 text-base-content/60">
               <Bell className="h-6 w-6" />
             </div>
-            <p className="mt-3 text-sm font-medium text-base-content">No notifications</p>
-            <p className="mt-1 text-xs text-base-content/60">You are all caught up!</p>
+            <p className="mt-3 text-sm font-medium text-base-content">{t("notifications.empty")}</p>
+            <p className="mt-1 text-xs text-base-content/60">{t("notifications.caughtUp")}</p>
           </div>
         ) : (
           <ScrollArea className="max-h-[400px]">

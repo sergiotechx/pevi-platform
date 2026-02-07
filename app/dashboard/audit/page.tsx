@@ -19,9 +19,9 @@ export default function AuditPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div><h1 className="font-heading text-2xl font-bold tracking-tight">Audit Evaluations</h1><p className="text-sm text-base-content/60">Verify or dispute evaluator decisions</p></div>
+      <div><h1 className="font-heading text-2xl font-bold tracking-tight">{t("audit.title")}</h1><p className="text-sm text-base-content/60">{t("audit.subtitle")}</p></div>
       {pendingAudits.length === 0 ? (
-        <Card className="border-base-300/50"><CardContent className="py-12 text-center"><p className="text-sm text-base-content/60">No pending audits.</p></CardContent></Card>
+        <Card className="border-base-300/50"><CardContent className="py-12 text-center"><p className="text-sm text-base-content/60">{t("audit.noPending")}</p></CardContent></Card>
       ) : (
         pendingAudits.map((ev) => {
           const evidence = evidences.find((e) => e.id === ev.evidenceId)
@@ -31,24 +31,24 @@ export default function AuditPage() {
             <Card key={ev.id} className="border-base-300/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Evaluation #{ev.id}</CardTitle>
+                  <CardTitle className="text-base">{t("audit.evaluation", { id: ev.id })}</CardTitle>
                   {isAudited ? <StatusBadge status={audited[ev.id]} /> : <StatusBadge status="pending" />}
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 <div className="grid gap-2 text-sm sm:grid-cols-2">
-                  <div><span className="text-base-content/60">Evaluator:</span> <span className="text-base-content">{evaluator?.name}</span></div>
-                  <div><span className="text-base-content/60">Decision:</span> <span className="text-base-content capitalize">{ev.decision}</span></div>
-                  <div><span className="text-base-content/60">Date:</span> <span className="text-base-content">{ev.evaluatedAt}</span></div>
+                  <div><span className="text-base-content/60">{t("audit.evaluator")}:</span> <span className="text-base-content">{evaluator?.name}</span></div>
+                  <div><span className="text-base-content/60">{t("audit.decision")}:</span> <span className="text-base-content capitalize">{ev.decision}</span></div>
+                  <div><span className="text-base-content/60">{t("audit.date")}:</span> <span className="text-base-content">{ev.evaluatedAt}</span></div>
                 </div>
                 <p className="text-sm text-base-content/60">{ev.comment}</p>
                 {!isAudited && (
                   <div className="flex gap-3">
-                    <Button onClick={() => handleAudit(ev.id, "verified")} className="bg-emerald-600 hover:bg-emerald-700 text-white"><ShieldCheck className="mr-2 h-4 w-4" />Verify</Button>
-                    <Button variant="outline" onClick={() => handleAudit(ev.id, "disputed")} className="text-error hover:text-error"><AlertTriangle className="mr-2 h-4 w-4" />Dispute</Button>
+                    <Button onClick={() => handleAudit(ev.id, "verified")} className="bg-emerald-600 hover:bg-emerald-700 text-white"><ShieldCheck className="mr-2 h-4 w-4" />{t("audit.verify")}</Button>
+                    <Button variant="outline" onClick={() => handleAudit(ev.id, "disputed")} className="text-error hover:text-error"><AlertTriangle className="mr-2 h-4 w-4" />{t("audit.dispute")}</Button>
                   </div>
                 )}
-                {isAudited && <p className="text-sm text-emerald-400">Audit recorded: {audited[ev.id]}</p>}
+                {isAudited && <p className="text-sm text-emerald-400">{t("audit.recorded", { decision: audited[ev.id] })}</p>}
               </CardContent>
             </Card>
           )

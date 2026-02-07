@@ -207,6 +207,8 @@ export const es: Record<string, string> = {
   "explore.none": "No hay campañas disponibles en este momento.",
   "explore.enrolled": "Inscrito",
   "explore.apply": "Solicitar Unirse",
+  "explore.budget": "Presupuesto: {{amount}} {{currency}}",
+  "explore.milestones": "{{count}} hitos",
 
   // Beneficiaries
   "beneficiaries.title": "Beneficiarios",
@@ -242,7 +244,7 @@ export const es: Record<string, string> = {
   // Progress
   "progress.title": "Mi Progreso",
   "progress.subtitle": "Seguimiento de tus hitos en campañas",
-  "progress.notEnrolled": "Aún no estás inscrito en ninguna campaña.",
+  "progress.none": "Aún no estás inscrito en ninguna campaña.",
   "progress.reward": "{{amount}} USDC",
 
   // Verified

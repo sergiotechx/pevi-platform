@@ -1,3 +1,7 @@
+"use client"
+
+import { useTranslation } from "@/lib/i18n-context"
+
 const colors: Record<string, string> = {
   active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
   completed: "border-primary/30 bg-primary/10 text-primary",
@@ -20,9 +24,10 @@ const labels: Record<string, string> = {
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation()
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors[status] || colors.pending}`}>
-      {labels[status] || status}
+      {t(`status.${status}`) !== `status.${status}` ? t(`status.${status}`) : labels[status] || status}
     </span>
   )
 }

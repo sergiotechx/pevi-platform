@@ -8,10 +8,12 @@ import { StatCard } from "@/components/stat-card"
 import { campaigns, evidences, invitations } from "@/lib/mock-data"
 import { useAuth } from "@/lib/auth-context"
 import { useNotifications } from "@/lib/notification-context"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function BeneficiaryOverview() {
   const { user } = useAuth()
   const { unreadCount } = useNotifications()
+  const { t } = useTranslation()
   if (!user) return null
 
   const myCampaigns = campaigns.filter((c) => c.beneficiaries.includes(user.id))
@@ -23,31 +25,31 @@ export function BeneficiaryOverview() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Beneficiary Dashboard</h1>
-          <p className="text-sm text-base-content/60">Track your campaigns and milestones</p>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">{t("benOverview.title")}</h1>
+          <p className="text-sm text-base-content/60">{t("benOverview.subtitle")}</p>
         </div>
-        <Button asChild variant="outline"><Link href="/dashboard/explore"><Compass className="mr-2 h-4 w-4" />Explore Campaigns</Link></Button>
+        <Button asChild variant="outline"><Link href="/dashboard/explore"><Compass className="mr-2 h-4 w-4" />{t("benOverview.explore")}</Link></Button>
       </div>
 
       {unreadCount > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
           <Bell className="h-5 w-5 text-primary" />
-          <p className="text-sm text-base-content">You have <span className="font-semibold text-primary">{unreadCount} unread notification{unreadCount > 1 ? "s" : ""}</span>.</p>
+          <p className="text-sm text-base-content">{t("benOverview.unread", { count: unreadCount })}</p>
         </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="My Campaigns" value={myCampaigns.length} icon={Target} />
-        <StatCard title="Evidence Submitted" value={myEvidences.length} icon={Upload} />
-        <StatCard title="Milestones Approved" value={approvedMilestones.length} icon={CheckCircle} />
-        <StatCard title="Pending Invitations" value={pendingInvitations.length} icon={Bell} />
+        <StatCard title={t("benOverview.myCampaigns")} value={myCampaigns.length} icon={Target} />
+        <StatCard title={t("benOverview.evidenceSubmitted")} value={myEvidences.length} icon={Upload} />
+        <StatCard title={t("benOverview.milestonesApproved")} value={approvedMilestones.length} icon={CheckCircle} />
+        <StatCard title={t("benOverview.pendingInvitations")} value={pendingInvitations.length} icon={Bell} />
       </div>
 
       <Card className="border-base-300/50">
-        <CardHeader><CardTitle className="text-base">My Campaigns</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t("benOverview.myCampaigns")}</CardTitle></CardHeader>
         <CardContent>
           {myCampaigns.length === 0 ? (
-            <p className="text-sm text-base-content/60">No campaigns yet. <Link href="/dashboard/explore" className="text-primary hover:underline">Explore available campaigns</Link>.</p>
+            <p className="text-sm text-base-content/60">{t("benOverview.noCampaigns")} <Link href="/dashboard/explore" className="text-primary hover:underline">{t("benOverview.exploreLink")}</Link>.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {myCampaigns.map((c) => {
