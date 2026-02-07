@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CalendarDays, Target, ArrowRight, Megaphone } from "lucide-react"
 
+function formatNumber(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n)
+}
+
 export default function ExploreProjectsPage() {
   const { t } = useTranslation()
   const publishedCampaigns = campaigns.filter(
@@ -58,7 +62,7 @@ export default function ExploreProjectsPage() {
               labelKey: "public.statMilestones",
             },
             {
-              value: `${(campaigns.reduce((acc, c) => acc + c.budget, 0) / 1000).toFixed(0)}K`,
+              value: `${formatNumber(Math.round(campaigns.reduce((acc, c) => acc + c.budget, 0) / 1000))}K`,
               labelKey: "public.statBudget",
             },
             {
@@ -130,7 +134,7 @@ export default function ExploreProjectsPage() {
                   <div className="flex items-center justify-between border-t border-base-300/50 pt-3">
                     <span className="text-xs text-base-content/50">
                       {t("explore.budget", {
-                        amount: campaign.budget.toLocaleString(),
+                        amount: formatNumber(campaign.budget),
                         currency: campaign.currency,
                       })}{" "}
                       &middot;{" "}

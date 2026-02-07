@@ -4,6 +4,10 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { campaigns, users } from "@/lib/mock-data"
+
+function formatNumber(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n)
+}
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { StatusBadge } from "@/components/status-badge"
@@ -95,7 +99,7 @@ export default function ProjectDetailsPage({
           <CardContent className="flex flex-col items-center py-4">
             <DollarSign className="mb-1 h-5 w-5 text-primary" />
             <p className="text-lg font-bold text-base-content">
-              {campaign.budget.toLocaleString()}
+              {formatNumber(campaign.budget)}
             </p>
             <p className="text-xs text-base-content/50">{campaign.currency}</p>
           </CardContent>
