@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Organization {
+  org_id            Int                  @id @default(autoincrement())
+  name              String?
+  type              String?
+  country           Int?
+
+  // Relations
+  campaigns         Campaign[]
+  organizationStaff OrganizationStaff[]
+
+  @@map("ORGANIZATION")
+}
+
+model User {
+  user_id             Int                    @id @default(autoincrement())
+  fullName            String
+  email               String                 @unique
+  password            String?
+  role                String
+  status              String?
+
+  // Relations
+  campaignBeneficiaries CampaignBeneficiary[]
+  organizationStaff     OrganizationStaff[]
+
+  @@map("USER")
+}
+
+model Campaign {
+  campaign_id   Int       @id @default(autoincrement())
+  org_id        Int
+  title         String
+  description   String?
+  cost          Float?
+  start_at      String?
+  status        String?
+
+  // Relations
+  organization          Organization           @relation(fields: [org_id], references: [org_id])
+  campaignBeneficiaries CampaignBeneficiary[]
+  milestones            Milestone[]
+  campaignStaff         CampaignStaff[]
+
+  @@index([org_id])
+  @@map("CAMPAIGN")
+}
+
+model CampaignBeneficiary {
+  campaignBeneficiary_id Int        @id @default(autoincrement())
+  campaign_id            Int
+  user_id                Int
+  status                 String
+
+  // Relations
+  campaign   Campaign   @relation(fields: [campaign_id], references: [campaign_id])
+  user       User       @relation(fields: [user_id], references: [user_id])
+  activities Activity[]
+
+  @@unique([campaign_id, user_id])
+  @@index([user_id])
+  @@map("CAMPAIGN_BENEFICIARY")
+}
+
+model Milestone {
+  milestone_id  Int        @id @default(autoincrement())
+  campaign_id   Int
+  name          String?
+  description   String?
+  due_at        String?
+  status        String?
+  total_amount  Float?
+  currency      String?
+
+  // Relations
+  campaign   Campaign   @relation(fields: [campaign_id], references: [campaign_id])
+  activities Activity[]
+
+  @@index([campaign_id])
+  @@map("MILESTONE")
+}
+
+model OrganizationStaff {
+  orgStaff_id Int @id @default(autoincrement())
+  org_id      Int
+  user_id     Int
+
+  // Relations
+  organization  Organization    @relation(fields: [org_id], references: [org_id])
+  user          User            @relation(fields: [user_id], references: [user_id])
+  campaignStaff CampaignStaff[]
+
+  @@unique([org_id, user_id])
+  @@map("ORGANIZATION_STAFF")
+}
+
+model Activity {
+  activity_id             Int     @id @default(autoincrement())
+  milestone_id            Int
+  activity_status         String?
+  evidence_status         String?
+  verification_status     String?
+  evidence_ref            String?
+  activity_observation    String?
+  evaluation_note         String?
+  verification_note       String?
+  campaignBeneficiary_id  Int
+
+  // Relations
+  milestone           Milestone           @relation(fields: [milestone_id], references: [milestone_id])
+  campaignBeneficiary CampaignBeneficiary @relation(fields: [campaignBeneficiary_id], references: [campaignBeneficiary_id])
+  award               Award?
+
+  @@index([milestone_id])
+  @@index([campaignBeneficiary_id])
+  @@map("ACTIVITY")
+}
+
+model Award {
+  award_id    Int     @id @default(autoincrement())
+  activity_id Int     @unique
+  hash        String?
+  status      String?
+
+  // Relations
+  activity Activity @relation(fields: [activity_id], references: [activity_id])
+
+  @@map("AWARD")
+}
+
+model CampaignStaff {
+  campaignStaff_id Int     @id @default(autoincrement())
+  campaign_id      Int
+  orgStaff_id      Int
+  role             String?
+
+  // Relations
+  campaign          Campaign          @relation(fields: [campaign_id], references: [campaign_id])
+  organizationStaff OrganizationStaff @relation(fields: [orgStaff_id], references: [orgStaff_id])
+
+  @@unique([campaign_id, orgStaff_id])
+  @@map("CAMPAIGN_STAFF")
+}

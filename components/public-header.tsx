@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
@@ -8,6 +7,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageToggle } from "@/components/language-toggle"
 import { Button } from "@/components/ui/button"
+import { SafeLink } from "@/components/safe-link"
 import {
   Menu,
   X,
@@ -24,7 +24,7 @@ export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  const navLinks = [
+  const navSafeLinks = [
     { href: "/", labelKey: "public.explore" },
     { href: "/about", labelKey: "public.about" },
   ]
@@ -38,24 +38,24 @@ export function PublicHeader() {
     <header className="sticky top-0 z-50 border-b border-base-300/50 bg-base-100/90 backdrop-blur-md" suppressHydrationWarning>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
+        <SafeLink href="/" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-content text-sm font-bold">
             P
           </div>
           <span className="font-heading text-xl font-bold tracking-tight">
             PEVI
           </span>
-        </Link>
+        </SafeLink>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex" aria-label={t("common.navigation")}>
-          {navLinks.map((link) => {
+          {navSafeLinks.map((link) => {
             const isActive =
               link.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(link.href)
             return (
-              <Link
+              <SafeLink
                 key={link.href}
                 href={link.href}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
@@ -65,7 +65,7 @@ export function PublicHeader() {
                 }`}
               >
                 {t(link.labelKey)}
-              </Link>
+              </SafeLink>
             )
           })}
         </nav>
@@ -105,22 +105,22 @@ export function PublicHeader() {
                           {t(`role.${user.role}`)}
                         </p>
                       </div>
-                      <Link
+                      <SafeLink
                         href="/dashboard"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-base-content/80 transition-colors hover:bg-base-300/50"
                       >
                         <LayoutDashboard className="h-4 w-4" />
                         {t("common.dashboard")}
-                      </Link>
-                      <Link
+                      </SafeLink>
+                      <SafeLink
                         href="/dashboard/profile"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-base-content/80 transition-colors hover:bg-base-300/50"
                       >
                         <UserCircle className="h-4 w-4" />
                         {t("common.profile")}
-                      </Link>
+                      </SafeLink>
                       <div className="border-t border-base-300/50">
                         <button
                           onClick={handleLogout}
@@ -136,14 +136,14 @@ export function PublicHeader() {
               </div>
             ) : (
               <>
-                <Link href="/login">
+                <SafeLink href="/login">
                   <Button variant="ghost" size="sm">
                     {t("public.login")}
                   </Button>
-                </Link>
-                <Link href="/signup">
+                </SafeLink>
+                <SafeLink href="/signup">
                   <Button size="sm">{t("public.signup")}</Button>
-                </Link>
+                </SafeLink>
               </>
             )}
           </div>
@@ -167,13 +167,13 @@ export function PublicHeader() {
       {mobileOpen && (
         <div className="border-t border-base-300/50 bg-base-100 md:hidden">
           <nav className="flex flex-col px-4 py-3" aria-label={t("common.navigation")}>
-            {navLinks.map((link) => {
+            {navSafeLinks.map((link) => {
               const isActive =
                 link.href === "/"
                   ? pathname === "/"
                   : pathname.startsWith(link.href)
               return (
-                <Link
+                <SafeLink
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
@@ -184,7 +184,7 @@ export function PublicHeader() {
                   }`}
                 >
                   {t(link.labelKey)}
-                </Link>
+                </SafeLink>
               )
             })}
 
@@ -205,14 +205,14 @@ export function PublicHeader() {
                     </p>
                   </div>
                 </div>
-                <Link
+                <SafeLink
                   href="/dashboard"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm text-base-content/70 hover:bg-base-200"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   {t("common.dashboard")}
-                </Link>
+                </SafeLink>
                 <button
                   onClick={() => {
                     setMobileOpen(false)
@@ -226,16 +226,16 @@ export function PublicHeader() {
               </>
             ) : (
               <div className="flex flex-col gap-2 px-3 py-2">
-                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                <SafeLink href="/login" onClick={() => setMobileOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full">
                     {t("public.login")}
                   </Button>
-                </Link>
-                <Link href="/signup" onClick={() => setMobileOpen(false)}>
+                </SafeLink>
+                <SafeLink href="/signup" onClick={() => setMobileOpen(false)}>
                   <Button size="sm" className="w-full">
                     {t("public.signup")}
                   </Button>
-                </Link>
+                </SafeLink>
               </div>
             )}
           </nav>

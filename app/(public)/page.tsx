@@ -1,9 +1,9 @@
 "use client"
 
-import Link from "next/link"
 import { campaigns } from "@/lib/mock-data"
 import { useTranslation } from "@/lib/i18n-context"
 import { StatusBadge } from "@/components/status-badge"
+import { SafeLink } from "@/components/safe-link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CalendarDays, Target, ArrowRight, Megaphone } from "lucide-react"
@@ -31,17 +31,17 @@ export default function ExploreProjectsPage() {
               {t("public.heroSubtitle")}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/signup">
+              <SafeLink href="/signup">
                 <Button size="lg">
                   {t("public.getStarted")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </Link>
-              <Link href="/about">
+              </SafeLink>
+              <SafeLink href="/about">
                 <Button variant="outline" size="lg">
                   {t("public.learnMore")}
                 </Button>
-              </Link>
+              </SafeLink>
             </div>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function ExploreProjectsPage() {
                         count: campaign.milestones.length,
                       })}
                     </span>
-                    <Link href={`/projects/${campaign.id}`}>
+                    <SafeLink href={`/projects/${campaign.id}`}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -151,7 +151,7 @@ export default function ExploreProjectsPage() {
                         {t("public.viewDetails")}
                         <ArrowRight className="ml-1 h-3.5 w-3.5" />
                       </Button>
-                    </Link>
+                    </SafeLink>
                   </div>
                 </CardContent>
               </Card>
