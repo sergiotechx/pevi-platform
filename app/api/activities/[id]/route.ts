@@ -10,10 +10,11 @@ import { activityIncludes } from '@/lib/api-includes'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = validateId(params.id)
+    const { id: rawId } = await params
+    const id = validateId(rawId)
     if (!id) {
       return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
     }
@@ -61,10 +62,11 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = validateId(params.id)
+    const { id: rawId } = await params
+    const id = validateId(rawId)
     if (!id) {
       return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
     }
@@ -88,10 +90,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = validateId(params.id)
+    const { id: rawId } = await params
+    const id = validateId(rawId)
     if (!id) {
       return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
     }
