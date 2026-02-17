@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: userData.name,
         email: userData.email,
         role: userData.role as User["role"],
+        walletAddress: userData.walletAddress,
       }
       setUser(found)
       storeUser(found)
@@ -78,17 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateWallet = useCallback((walletAddress: string) => {
+    if (user) api.users.update(parseInt(user.id, 10), { walletAddress })
     setUser((prev) => {
       if (!prev) return prev
       const updated = { ...prev, walletAddress }
-      const idx = users.findIndex((u) => u.id === updated.id)
-      if (idx >= 0) users[idx] = updated
       storeUser(updated)
       return updated
     })
-  }, [])
+  }, [user])
 
   const connectWallet = useCallback((): Promise<{ success: boolean; address?: string; error?: string }> => {
+    const userId = user?.id
     return new Promise((resolve) => {
       setTimeout(() => {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
@@ -97,26 +98,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser((prev) => {
           if (!prev) return prev
           const updated = { ...prev, walletAddress: address }
-          const idx = users.findIndex((u) => u.id === updated.id)
-          if (idx >= 0) users[idx] = updated
           storeUser(updated)
           return updated
         })
+        if (userId) api.users.update(parseInt(userId, 10), { walletAddress: address })
         resolve({ success: true, address })
       }, 1200)
     })
-  }, [])
+  }, [user])
 
   const disconnectWallet = useCallback(() => {
+    if (user) api.users.update(parseInt(user.id, 10), { walletAddress: null })
     setUser((prev) => {
       if (!prev) return prev
       const updated = { ...prev, walletAddress: undefined }
-      const idx = users.findIndex((u) => u.id === updated.id)
-      if (idx >= 0) users[idx] = updated
       storeUser(updated)
       return updated
     })
-  }, [])
+  }, [user])
 
   const logout = useCallback(() => { setUser(null); storeUser(null) }, [])
 

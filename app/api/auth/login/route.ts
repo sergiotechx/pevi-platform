@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       name: user.fullName,
       email: user.email,
       role: user.role,
+      walletAddress: user.walletAddress ?? undefined,
     })
   } catch (error) {
     return handleApiError(error)

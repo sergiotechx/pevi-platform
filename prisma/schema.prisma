@@ -29,6 +29,7 @@ model User {
   password            String?
   role                String
   status              String?
+  walletAddress       String?
 
   // Relations
   campaignBeneficiaries CampaignBeneficiary[]

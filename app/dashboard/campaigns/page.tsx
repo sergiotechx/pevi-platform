@@ -7,9 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
 import { campaigns } from "@/lib/mock-data"
 import { useTranslation } from "@/lib/i18n-context"
+import { useAuth } from "@/lib/auth-context"
 
 export default function CampaignsPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const canCreate = user?.role === "corporation"
 
   return (
     <div className="flex flex-col gap-6">
@@ -18,7 +21,11 @@ export default function CampaignsPage() {
           <h1 className="font-heading text-2xl font-bold tracking-tight">{t("campaigns.title")}</h1>
           <p className="text-sm text-base-content/60">{t("campaigns.subtitle")}</p>
         </div>
-        <Button asChild><Link href="/dashboard/campaigns/create"><PlusCircle className="mr-2 h-4 w-4" />{t("campaigns.new")}</Link></Button>
+        {canCreate ? (
+          <Button asChild><Link href="/dashboard/campaigns/create"><PlusCircle className="mr-2 h-4 w-4" />{t("campaigns.new")}</Link></Button>
+        ) : (
+          <Button disabled><PlusCircle className="mr-2 h-4 w-4" />{t("campaigns.new")}</Button>
+        )}
       </div>
       <div className="flex flex-col gap-4">
         {campaigns.map((c) => {
