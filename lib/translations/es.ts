@@ -133,6 +133,7 @@ export const es: Record<string, string> = {
   "campaigns.budget": "Presupuesto: {{amount}} {{currency}}",
   "campaigns.beneficiaries": "{{count}} beneficiarios",
   "campaigns.milestonesDone": "{{done}}/{{total}} hitos completados",
+  "campaigns.donate": "Donar",
 
   // Create Campaign
   "createCampaign.title": "Crear Campaña",

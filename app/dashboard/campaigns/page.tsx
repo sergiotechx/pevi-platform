@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { PlusCircle } from "lucide-react"
+import { PlusCircle, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
@@ -13,6 +13,7 @@ export default function CampaignsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const canCreate = user?.role === "corporation"
+  const canDonate = user?.role === "angel_investor"
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,6 +50,13 @@ export default function CampaignsPage() {
                 <div className="mt-2 h-1.5 rounded-full bg-base-300">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                 </div>
+                {canDonate && (
+                  <div className="mt-4">
+                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10">
+                      <Heart className="mr-2 h-4 w-4" />{t("campaigns.donate")}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
