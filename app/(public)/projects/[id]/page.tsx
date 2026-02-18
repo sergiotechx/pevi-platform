@@ -1,14 +1,9 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { campaigns, users } from "@/lib/mock-data"
 import { DonationModal } from "@/components/donation-modal"
-
-function formatNumber(n: number): string {
-  return new Intl.NumberFormat("en-US").format(n)
-}
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { StatusBadge } from "@/components/status-badge"
@@ -24,9 +19,40 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  ShieldCheck,
-  UserCheck,
 } from "lucide-react"
+
+function formatNumber(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n)
+}
+
+interface Milestone {
+  milestone_id: number
+  name: string
+  status: string
+  total_amount: number
+}
+
+interface CampaignBeneficiary {
+  campaignBeneficiary_id: number
+  user_id: number
+}
+
+interface Organization {
+  org_id: number
+  name: string
+}
+
+interface Campaign {
+  campaign_id: number
+  title: string
+  description: string
+  cost: number
+  start_at: string
+  status: string
+  organization: Organization | null
+  milestones: Milestone[]
+  campaignBeneficiaries: CampaignBeneficiary[]
+}
 
 const milestoneIcons: Record<string, typeof CheckCircle2> = {
   approved: CheckCircle2,
@@ -45,22 +71,39 @@ export default function ProjectDetailsPage({
   const { t } = useTranslation()
   const { user, isAuthenticated } = useAuth()
   const [showDonation, setShowDonation] = useState(false)
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notFoundFlag, setNotFoundFlag] = useState(false)
 
-  const campaign = campaigns.find((c) => c.id === id)
-  if (!campaign) {
-    notFound()
+  useEffect(() => {
+    fetch(`/api/campaigns/${id}?include=basic`)
+      .then((r) => {
+        if (r.status === 404) { setNotFoundFlag(true); return null }
+        return r.json()
+      })
+      .then((data) => { if (data) setCampaign(data) })
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (notFoundFlag) notFound()
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8 lg:py-12">
+        <div className="rounded-lg border border-base-300/50 bg-base-200/50 p-12 text-center">
+          <p className="text-base-content/60">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
-  const evaluator = campaign.evaluatorId
-    ? users.find((u) => u.id === campaign.evaluatorId)
-    : null
-  const verifier = campaign.verifierId
-    ? users.find((u) => u.id === campaign.verifierId)
-    : null
+  if (!campaign) return null
 
   const isAlreadyBeneficiary =
     isAuthenticated && user
-      ? campaign.beneficiaries.includes(user.id)
+      ? campaign.campaignBeneficiaries.some(
+          (cb) => cb.user_id === parseInt(user.id, 10)
+        )
       : false
 
   const approvedMilestones = campaign.milestones.filter(
@@ -86,13 +129,15 @@ export default function ProjectDetailsPage({
       <div className="mb-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="text-balance font-heading text-3xl font-bold tracking-tight text-base-content">
-            {campaign.name}
+            {campaign.title}
           </h1>
           <StatusBadge status={campaign.status} />
         </div>
-        <p className="mt-1 text-sm text-base-content/50">
-          {t("public.by")} {campaign.corporationName}
-        </p>
+        {campaign.organization && (
+          <p className="mt-1 text-sm text-base-content/50">
+            {t("public.by")} {campaign.organization.name}
+          </p>
+        )}
       </div>
 
       {/* Stats row */}
@@ -101,9 +146,9 @@ export default function ProjectDetailsPage({
           <CardContent className="flex flex-col items-center py-4">
             <DollarSign className="mb-1 h-5 w-5 text-primary" />
             <p className="text-lg font-bold text-base-content">
-              {formatNumber(campaign.budget)}
+              {formatNumber(campaign.cost ?? 0)}
             </p>
-            <p className="text-xs text-base-content/50">{campaign.currency}</p>
+            <p className="text-xs text-base-content/50">USDC</p>
           </CardContent>
         </Card>
         <Card className="border-base-300/50">
@@ -121,7 +166,7 @@ export default function ProjectDetailsPage({
           <CardContent className="flex flex-col items-center py-4">
             <UsersIcon className="mb-1 h-5 w-5 text-accent" />
             <p className="text-lg font-bold text-base-content">
-              {campaign.beneficiaries.length}
+              {campaign.campaignBeneficiaries.length}
             </p>
             <p className="text-xs text-base-content/50">
               {t("public.beneficiaries")}
@@ -132,17 +177,17 @@ export default function ProjectDetailsPage({
           <CardContent className="flex flex-col items-center py-4">
             <CalendarDays className="mb-1 h-5 w-5 text-info" />
             <p className="text-sm font-bold text-base-content">
-              {campaign.startDate}
+              {campaign.start_at}
             </p>
             <p className="text-xs text-base-content/50">
-              {campaign.endDate}
+              {t("explore.startDate") || "Start date"}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Description & Objectives */}
-      <div className="mb-8 grid gap-6 lg:grid-cols-2">
+      {/* Description */}
+      <div className="mb-8">
         <Card className="border-base-300/50">
           <CardHeader>
             <CardTitle className="text-base text-base-content">
@@ -155,51 +200,7 @@ export default function ProjectDetailsPage({
             </p>
           </CardContent>
         </Card>
-        <Card className="border-base-300/50">
-          <CardHeader>
-            <CardTitle className="text-base text-base-content">
-              {t("public.objectives")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed text-base-content/70">
-              {campaign.objectives}
-            </p>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Team */}
-      {(evaluator || verifier) && (
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
-          {evaluator && (
-            <div className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-200/50 px-4 py-3">
-              <UserCheck className="h-5 w-5 text-info" />
-              <div>
-                <p className="text-xs text-base-content/50">
-                  {t("public.evaluator")}
-                </p>
-                <p className="text-sm font-medium text-base-content">
-                  {evaluator.name}
-                </p>
-              </div>
-            </div>
-          )}
-          {verifier && (
-            <div className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-200/50 px-4 py-3">
-              <ShieldCheck className="h-5 w-5 text-emerald-500" />
-              <div>
-                <p className="text-xs text-base-content/50">
-                  {t("public.verifier")}
-                </p>
-                <p className="text-sm font-medium text-base-content">
-                  {verifier.name}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Milestones */}
       <Card className="mb-8 border-base-300/50">
@@ -227,7 +228,7 @@ export default function ProjectDetailsPage({
               const Icon = milestoneIcons[milestone.status] || AlertCircle
               return (
                 <div
-                  key={milestone.id}
+                  key={milestone.milestone_id}
                   className="flex items-start gap-3 rounded-lg border border-base-300/30 bg-base-200/30 p-4"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-base-300/50">
@@ -235,18 +236,13 @@ export default function ProjectDetailsPage({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-medium text-base-content">
-                          {idx + 1}. {milestone.title}
-                        </p>
-                        <p className="mt-0.5 text-xs text-base-content/50">
-                          {milestone.description}
-                        </p>
-                      </div>
+                      <p className="text-sm font-medium text-base-content">
+                        {idx + 1}. {milestone.name}
+                      </p>
                       <StatusBadge status={milestone.status} />
                     </div>
                     <p className="mt-2 text-xs font-medium text-primary">
-                      {t("common.reward")}: {milestone.reward} USDC
+                      {t("common.reward")}: {formatNumber(milestone.total_amount)} USDC
                     </p>
                   </div>
                 </div>
@@ -303,7 +299,9 @@ export default function ProjectDetailsPage({
                   <Button>{t("public.joinProject")}</Button>
                 )}
                 {user?.role === "angel_investor" && (
-                  <Button onClick={() => setShowDonation(true)}>{t("public.joinProject")}</Button>
+                  <Button onClick={() => setShowDonation(true)}>
+                    {t("public.joinProject")}
+                  </Button>
                 )}
                 <Link href="/dashboard">
                   <Button variant="outline">
@@ -318,8 +316,8 @@ export default function ProjectDetailsPage({
 
       {showDonation && (
         <DonationModal
-          campaignId={campaign.id}
-          campaignName={campaign.name}
+          campaignId={campaign.campaign_id.toString()}
+          campaignName={campaign.title}
           onClose={() => setShowDonation(false)}
         />
       )}
