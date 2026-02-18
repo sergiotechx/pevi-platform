@@ -34,6 +34,7 @@ model User {
   // Relations
   campaignBeneficiaries CampaignBeneficiary[]
   organizationStaff     OrganizationStaff[]
+  donations             Donation[]
 
   @@map("USER")
 }
@@ -52,6 +53,7 @@ model Campaign {
   campaignBeneficiaries CampaignBeneficiary[]
   milestones            Milestone[]
   campaignStaff         CampaignStaff[]
+  donations             Donation[]
 
   @@index([org_id])
   @@map("CAMPAIGN")
@@ -137,6 +139,23 @@ model Award {
   activity Activity @relation(fields: [activity_id], references: [activity_id])
 
   @@map("AWARD")
+}
+
+model Donation {
+  donation_id  Int      @id @default(autoincrement())
+  user_id      Int
+  campaign_id  Int
+  amount       Decimal
+  date         DateTime
+  hash         String?
+
+  // Relations
+  user     User     @relation(fields: [user_id], references: [user_id])
+  campaign Campaign @relation(fields: [campaign_id], references: [campaign_id])
+
+  @@index([user_id])
+  @@index([campaign_id])
+  @@map("DONATION")
 }
 
 model CampaignStaff {
