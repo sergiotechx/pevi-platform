@@ -198,6 +198,18 @@ export const en: Record<string, string> = {
   "review.approve": "Approve",
   "review.reject": "Reject",
   "review.decisionRecorded": "Decision recorded: {{decision}}",
+  "review.observation": "Beneficiary observation",
+  "review.evidenceUrl": "Activity URL",
+  "review.status": "Evaluator status",
+  "review.statusPending": "Pending",
+  "review.statusReview": "In review",
+  "review.statusApproved": "Approved",
+  "review.statusRejected": "Rejected",
+  "review.evaluationNote": "Evaluator note",
+  "review.verificationNote": "Verification note",
+  "review.save": "Save",
+  "review.saving": "Saving...",
+  "review.saved": "Saved",
 
   // Audit
   "audit.title": "Audit Evaluations",
@@ -210,6 +222,18 @@ export const en: Record<string, string> = {
   "audit.verify": "Verify",
   "audit.dispute": "Dispute",
   "audit.recorded": "Audit recorded: {{decision}}",
+  "audit.evaluationStatus": "Evaluation Status",
+  "audit.verificationStatus": "Verification Status",
+  "audit.verificationNote": "Verification Note",
+  "audit.notePlaceholder": "Add verification notes...",
+  "audit.save": "Save",
+  "audit.saving": "Saving...",
+  "audit.saved": "Saved",
+  "audit.statusPending": "Pending",
+  "audit.statusApproved": "Approved",
+  "audit.statusReview": "In Review",
+  "audit.statusRejected": "Rejected",
+  "audit.evaluatorNote": "Evaluator's Note",
 
   // Explore
   "explore.title": "Explore Campaigns",
@@ -232,6 +256,7 @@ export const en: Record<string, string> = {
   "evaluations.none": "No evaluations yet.",
   "evaluations.evidence": "Evidence #{{id}}",
   "evaluations.evaluatedOn": "Evaluated on {{date}}",
+  "evaluations.activityStatus": "Activity status",
 
   // Manage Roles
   "manageRoles.title": "Manage Roles",
@@ -263,6 +288,7 @@ export const en: Record<string, string> = {
   "verified.subtitle": "Verified evaluations",
   "verified.none": "No verified evaluations yet.",
   "verified.evaluation": "Evaluation #{{id}}",
+  "verified.beneficiary": "Beneficiary",
 
   // Corporation Overview
   "corpOverview.title": "Corporation Dashboard",
