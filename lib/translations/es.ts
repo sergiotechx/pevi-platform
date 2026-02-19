@@ -198,6 +198,18 @@ export const es: Record<string, string> = {
   "review.approve": "Aprobar",
   "review.reject": "Rechazar",
   "review.decisionRecorded": "Decisión registrada: {{decision}}",
+  "review.observation": "Observación del beneficiario",
+  "review.evidenceUrl": "URL de la actividad",
+  "review.status": "Estado del evaluador",
+  "review.statusPending": "Pendiente",
+  "review.statusReview": "En revisión",
+  "review.statusApproved": "Aprobado",
+  "review.statusRejected": "Rechazado",
+  "review.evaluationNote": "Nota del evaluador",
+  "review.verificationNote": "Nota de verificación",
+  "review.save": "Guardar",
+  "review.saving": "Guardando...",
+  "review.saved": "Guardado",
 
   // Audit
   "audit.title": "Auditar Evaluaciones",
@@ -210,6 +222,18 @@ export const es: Record<string, string> = {
   "audit.verify": "Verificar",
   "audit.dispute": "Disputar",
   "audit.recorded": "Auditoría registrada: {{decision}}",
+  "audit.evaluationStatus": "Estado de evaluación",
+  "audit.verificationStatus": "Estado de verificación",
+  "audit.verificationNote": "Nota de verificación",
+  "audit.notePlaceholder": "Agregar notas de verificación...",
+  "audit.save": "Guardar",
+  "audit.saving": "Guardando...",
+  "audit.saved": "Guardado",
+  "audit.statusPending": "Pendiente",
+  "audit.statusApproved": "Aprobado",
+  "audit.statusReview": "En revisión",
+  "audit.statusRejected": "Rechazado",
+  "audit.evaluatorNote": "Nota del evaluador",
 
   // Explore
   "explore.title": "Explorar Campañas",
@@ -232,6 +256,7 @@ export const es: Record<string, string> = {
   "evaluations.none": "Aún no hay evaluaciones.",
   "evaluations.evidence": "Evidencia #{{id}}",
   "evaluations.evaluatedOn": "Evaluado el {{date}}",
+  "evaluations.activityStatus": "Estado de actividad",
 
   // Manage Roles
   "manageRoles.title": "Gestionar Roles",
@@ -263,6 +288,7 @@ export const es: Record<string, string> = {
   "verified.subtitle": "Evaluaciones verificadas",
   "verified.none": "Aún no hay evaluaciones verificadas.",
   "verified.evaluation": "Evaluación #{{id}}",
+  "verified.beneficiary": "Beneficiario",
 
   // Corporation Overview
   "corpOverview.title": "Panel de Corporación",
