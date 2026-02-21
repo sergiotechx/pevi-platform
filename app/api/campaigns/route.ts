@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
+    const orgIdParam = searchParams.get('org_id')
+
+    // Optional filter by organization
+    const where = orgIdParam ? { org_id: parseInt(orgIdParam, 10) } : undefined
 
     // Determine include configuration
     let include = undefined
@@ -23,6 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const campaigns = await prisma.campaign.findMany({
+      where,
       include,
       skip,
       take,

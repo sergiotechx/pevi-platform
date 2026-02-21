@@ -71,6 +71,7 @@ export interface LoginResponse {
   email: string;
   role: string;
   walletAddress?: string;
+  orgId?: number;
 }
 
 /**

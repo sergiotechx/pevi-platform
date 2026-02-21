@@ -1,13 +1,37 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { users } from "@/lib/mock-data"
 import { useTranslation } from "@/lib/i18n-context"
+
+type StaffUser = {
+  user_id: number
+  fullName: string
+  email: string
+}
 
 export default function ManageRolesPage() {
   const { t } = useTranslation()
-  const evaluators = users.filter((u) => u.role === "evaluator")
-  const verifiers = users.filter((u) => u.role === "verifier")
+  const [evaluators, setEvaluators] = useState<StaffUser[]>([])
+  const [verifiers, setVerifiers] = useState<StaffUser[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/users?role=evaluator`).then((r) => r.json()),
+      fetch(`/api/users?role=verifier`).then((r) => r.json()),
+    ])
+      .then(([evalData, verData]) => {
+        setEvaluators(Array.isArray(evalData) ? evalData : [])
+        setVerifiers(Array.isArray(verData) ? verData : [])
+      })
+      .catch(() => { setEvaluators([]); setVerifiers([]) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return <div className="flex flex-col gap-6"><p className="text-sm text-base-content/60">{t("common.loading")}</p></div>
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -17,9 +41,9 @@ export default function ManageRolesPage() {
           <CardHeader><CardTitle className="text-base">{t("manageRoles.evaluators", { count: evaluators.length })}</CardTitle></CardHeader>
           <CardContent>
             {evaluators.map((u) => (
-              <div key={u.id} className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-300/30 p-3 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">{u.name.charAt(0)}</div>
-                <div><p className="text-sm font-medium text-base-content">{u.name}</p><p className="text-xs text-base-content/60">{u.email}</p></div>
+              <div key={u.user_id} className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-300/30 p-3 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">{u.fullName.charAt(0)}</div>
+                <div><p className="text-sm font-medium text-base-content">{u.fullName}</p><p className="text-xs text-base-content/60">{u.email}</p></div>
               </div>
             ))}
           </CardContent>
@@ -28,9 +52,9 @@ export default function ManageRolesPage() {
           <CardHeader><CardTitle className="text-base">{t("manageRoles.verifiers", { count: verifiers.length })}</CardTitle></CardHeader>
           <CardContent>
             {verifiers.map((u) => (
-              <div key={u.id} className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-300/30 p-3 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold text-accent">{u.name.charAt(0)}</div>
-                <div><p className="text-sm font-medium text-base-content">{u.name}</p><p className="text-xs text-base-content/60">{u.email}</p></div>
+              <div key={u.user_id} className="flex items-center gap-3 rounded-lg border border-base-300/50 bg-base-300/30 p-3 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold text-accent">{u.fullName.charAt(0)}</div>
+                <div><p className="text-sm font-medium text-base-content">{u.fullName}</p><p className="text-xs text-base-content/60">{u.email}</p></div>
               </div>
             ))}
           </CardContent>
@@ -39,3 +63,4 @@ export default function ManageRolesPage() {
     </div>
   )
 }
+

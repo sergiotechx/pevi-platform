@@ -1,21 +1,42 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Megaphone, Users, Target, PlusCircle, Bell } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/stat-card"
 import { StatusBadge } from "@/components/status-badge"
-import { campaigns, users as allUsers } from "@/lib/mock-data"
 import { useNotifications } from "@/lib/notification-context"
 import { useTranslation } from "@/lib/i18n-context"
+import { useAuth } from "@/lib/auth-context"
+
+type CampaignItem = {
+  campaign_id: number
+  title: string
+  status: string | null
+  campaignBeneficiaries?: { campaignBeneficiary_id: number }[]
+  milestones?: { milestone_id: number; status: string | null }[]
+}
 
 export function CorporationOverview() {
   const { unreadCount } = useNotifications()
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/campaigns?include=full`)
+      .then((r) => r.json())
+      .then((data: CampaignItem[]) => setCampaigns(Array.isArray(data) ? data : []))
+      .catch(() => setCampaigns([]))
+      .finally(() => setLoading(false))
+  }, [])
+
   const activeCampaigns = campaigns.filter((c) => c.status === "active")
-  const totalBeneficiaries = new Set(campaigns.flatMap((c) => c.beneficiaries)).size
-  const totalMilestones = campaigns.reduce((acc, c) => acc + c.milestones.length, 0)
+  const totalBeneficiaries = new Set(campaigns.flatMap((c) => (c.campaignBeneficiaries ?? []).map((cb) => cb.campaignBeneficiary_id))).size
+  const totalMilestones = campaigns.reduce((acc, c) => acc + (c.milestones?.length ?? 0), 0)
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,27 +56,34 @@ export function CorporationOverview() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard title={t("corpOverview.activeCampaigns")} value={activeCampaigns.length} icon={Megaphone} sub={t("corpOverview.total", { count: campaigns.length })} />
-        <StatCard title={t("corpOverview.totalBeneficiaries")} value={totalBeneficiaries} icon={Users} />
-        <StatCard title={t("corpOverview.totalMilestones")} value={totalMilestones} icon={Target} sub={t("corpOverview.approved", { count: campaigns.reduce((a, c) => a + c.milestones.filter((m) => m.status === "approved").length, 0) })} />
+        <StatCard title={t("corpOverview.activeCampaigns")} value={loading ? "—" : activeCampaigns.length} icon={Megaphone} sub={t("corpOverview.total", { count: campaigns.length })} />
+        <StatCard title={t("corpOverview.totalBeneficiaries")} value={loading ? "—" : totalBeneficiaries} icon={Users} />
+        <StatCard title={t("corpOverview.totalMilestones")} value={loading ? "—" : totalMilestones} icon={Target} sub={t("corpOverview.approved", { count: campaigns.reduce((a, c) => a + (c.milestones ?? []).filter((m) => m.status === "approved").length, 0) })} />
       </div>
 
       <Card className="border-base-300/50">
         <CardHeader><CardTitle className="text-base">{t("corpOverview.recentCampaigns")}</CardTitle></CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3">
-            {campaigns.slice(0, 3).map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-lg border border-base-300/50 bg-base-300/30 p-3">
-                <div>
-                  <p className="text-sm font-medium text-base-content">{c.name}</p>
-                  <p className="text-xs text-base-content/60">{t("corpOverview.milestonesAndBeneficiaries", { milestones: c.milestones.length, beneficiaries: c.beneficiaries.length })}</p>
+            {loading ? (
+              <p className="text-sm text-base-content/60">{t("common.loading")}</p>
+            ) : campaigns.length === 0 ? (
+              <p className="text-sm text-base-content/60">{t("notifications.empty")}</p>
+            ) : (
+              campaigns.slice(0, 3).map((c) => (
+                <div key={c.campaign_id} className="flex items-center justify-between rounded-lg border border-base-300/50 bg-base-300/30 p-3">
+                  <div>
+                    <p className="text-sm font-medium text-base-content">{c.title}</p>
+                    <p className="text-xs text-base-content/60">{t("corpOverview.milestonesAndBeneficiaries", { milestones: c.milestones?.length ?? 0, beneficiaries: c.campaignBeneficiaries?.length ?? 0 })}</p>
+                  </div>
+                  <StatusBadge status={c.status ?? "draft"} />
                 </div>
-                <StatusBadge status={c.status} />
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
     </div>
   )
 }
+

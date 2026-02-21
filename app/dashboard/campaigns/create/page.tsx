@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,12 +12,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
+import { useAuth } from "@/lib/auth-context"
 
 interface MilestoneRow { title: string; description: string; reward: string }
 
 export default function CreateCampaignPage() {
   const router = useRouter()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [objectives, setObjectives] = useState("")
@@ -27,6 +29,7 @@ export default function CreateCampaignPage() {
   const [milestones, setMilestones] = useState<MilestoneRow[]>([{ title: "", description: "", reward: "" }])
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const addMilestone = () => setMilestones([...milestones, { title: "", description: "", reward: "" }])
   const removeMilestone = (i: number) => setMilestones(milestones.filter((_, idx) => idx !== i))
@@ -36,13 +39,61 @@ export default function CreateCampaignPage() {
     setMilestones(updated)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     if (!name || !description || !budget || !startDate || !endDate) { setError(t("createCampaign.errorRequired")); return }
     if (milestones.some((m) => !m.title)) { setError(t("createCampaign.errorMilestoneTitle")); return }
-    setSuccess(true)
-    setTimeout(() => router.push("/dashboard/campaigns"), 1500)
+    if (!user?.orgId) { setError("Organization not found. Your account must be linked to an organization to create campaigns."); return }
+
+    setSubmitting(true)
+    try {
+      // 1. Create the campaign
+      const campaignRes = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org_id: user.orgId,
+          title: name,
+          description,
+          cost: parseFloat(budget),
+          start_at: new Date(startDate).toISOString(),
+          status: "draft",
+        }),
+      })
+
+      if (!campaignRes.ok) {
+        const err = await campaignRes.json().catch(() => ({}))
+        setError(err.error || "Failed to create campaign")
+        setSubmitting(false)
+        return
+      }
+
+      const campaign = await campaignRes.json()
+
+      // 2. Create milestones for the campaign
+      for (const m of milestones) {
+        await fetch("/api/milestones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campaign_id: campaign.campaign_id,
+            name: m.title,
+            description: m.description || null,
+            total_amount: m.reward ? parseFloat(m.reward) : null,
+            currency: "USDC",
+            status: "pending",
+          }),
+        })
+      }
+
+      setSuccess(true)
+      setTimeout(() => router.push("/dashboard/campaigns"), 1500)
+    } catch {
+      setError("An unexpected error occurred")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (success) {
@@ -53,6 +104,32 @@ export default function CreateCampaignPage() {
         </div>
         <h2 className="font-heading text-xl font-bold text-base-content">{t("createCampaign.success")}</h2>
         <p className="text-sm text-base-content/60">{t("createCampaign.redirecting")}</p>
+      </div>
+    )
+  }
+
+  // If user has no orgId, show notice
+  if (user && user.role === "corporation" && !user.orgId) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/campaigns" className="rounded-md p-1.5 text-base-content/60 hover:bg-base-300 hover:text-base-content"><ArrowLeft className="h-5 w-5" /></Link>
+          <div><h1 className="font-heading text-2xl font-bold tracking-tight">{t("createCampaign.title")}</h1></div>
+        </div>
+        <Card className="border-warning/50 bg-warning/5">
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/20 text-warning">
+              <Plus className="h-6 w-6 rotate-45" />
+            </div>
+            <div className="max-w-md space-y-2">
+              <h3 className="font-bold text-base-content">Organization Not Linked</h3>
+              <p className="text-sm text-base-content/60">
+                Your account is not linked to any organization. An administrator must associate your account with an organization record before you can create campaigns.
+              </p>
+              <Button asChild variant="outline" className="mt-4"><Link href="/dashboard/campaigns">Go Back</Link></Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -92,7 +169,7 @@ export default function CreateCampaignPage() {
                   <Input type="number" value={m.reward} onChange={(e) => updateMilestone(i, "reward", e.target.value)} placeholder={t("createCampaign.milestoneReward")} className="w-32 bg-base-100/50" />
                 </div>
                 {milestones.length > 1 && (
-                  <button type="button" onClick={() => removeMilestone(i)} className="mt-2 text-base-content/60 hover:text-error"><Trash2 className="h-4 w-4" /></button>
+                  <button type="button" aria-label="Remove milestone" onClick={() => removeMilestone(i)} className="mt-2 text-base-content/60 hover:text-error"><Trash2 className="h-4 w-4" /></button>
                 )}
               </div>
             ))}
@@ -100,9 +177,11 @@ export default function CreateCampaignPage() {
         </Card>
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" asChild><Link href="/dashboard/campaigns">{t("common.cancel")}</Link></Button>
-          <Button type="submit">{t("createCampaign.submit")}</Button>
+          <Button type="submit" disabled={submitting}>{submitting ? t("common.loading") : t("createCampaign.submit")}</Button>
         </div>
       </form>
     </div>
   )
 }
+
+
