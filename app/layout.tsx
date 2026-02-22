@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata, Viewport } from "next"
-import { Roboto } from "next/font/google"
+import { Roboto, Plus_Jakarta_Sans } from "next/font/google"
 import { AuthProvider } from "@/lib/auth-context"
 import { NotificationProvider } from "@/lib/notification-context"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -11,6 +11,12 @@ const roboto = Roboto({
   subsets: ["latin"],
   weight: ["300", "400", "500", "700"],
   variable: "--font-roboto"
+})
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-jakarta"
 })
 
 export const metadata: Metadata = {
@@ -28,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={roboto.variable} suppressHydrationWarning>
+    <html lang="en" className={`${roboto.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider>

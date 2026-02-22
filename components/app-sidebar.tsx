@@ -60,17 +60,22 @@ export function AppSidebar() {
   const items = navByRole[user.role] || navByRole.beneficiary
 
   return (
-    <Sidebar className="border-r border-base-300">
-      <SidebarHeader className="border-b border-base-300 p-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-content text-sm font-bold">P</div>
-          <span className="font-heading text-lg font-bold tracking-tight">PEVI</span>
+    <Sidebar className="border-r border-base-300/30 bg-gradient-to-b from-base-200 via-base-200 to-base-100/80">
+      <SidebarHeader className="border-b border-base-300/30 p-4">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-white text-sm font-bold shadow-md">
+            P
+          </div>
+          <div>
+            <span className="font-heading text-lg font-bold tracking-tight text-gradient">PEVI</span>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-base-content/40">Platform</p>
+          </div>
         </Link>
-        <p className="mt-1 text-xs text-base-content/60 capitalize">{t("role.dashboard", { role: t(`role.${user.role}`) })}</p>
+        <p className="mt-2 text-xs text-base-content/50 capitalize">{t("role.dashboard", { role: t(`role.${user.role}`) })}</p>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t("common.navigation")}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-base-content/40">{t("common.navigation")}</SidebarGroupLabel>
           <SidebarMenu>
             {items.map((item) => {
               const isActive = item.href === "/dashboard"
@@ -79,7 +84,14 @@ export function AppSidebar() {
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={isActive}>
-                    <Link href={item.href}>
+                    <Link
+                      href={item.href}
+                      className={
+                        isActive
+                          ? "relative border-l-2 border-primary bg-primary/10 text-primary font-medium"
+                          : "text-base-content/70 hover:text-base-content hover:bg-base-300/40"
+                      }
+                    >
                       <item.icon className="h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
                     </Link>
@@ -90,16 +102,16 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-base-300 p-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">
+      <SidebarFooter className="border-t border-base-300/30 p-3">
+        <div className="flex items-center gap-3 rounded-xl bg-base-300/30 p-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-sm">
             {user.name.charAt(0)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{user.name}</p>
-            <p className="truncate text-xs text-base-content/60">{user.email}</p>
+            <p className="truncate text-sm font-semibold">{user.name}</p>
+            <p className="truncate text-xs text-base-content/50">{user.email}</p>
           </div>
-          <button onClick={logout} className="rounded-md p-1.5 text-base-content/60 hover:bg-base-300 hover:text-base-content" title={t("common.logout")}>
+          <button onClick={logout} className="rounded-lg p-2 text-base-content/40 hover:bg-base-300/50 hover:text-error transition-colors" title={t("common.logout")}>
             <LogOut className="h-4 w-4" />
           </button>
         </div>

@@ -6,9 +6,93 @@ body {
   font-family: 'Roboto', system-ui, sans-serif;
 }
 
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer components {
+  /* Brand gradient for primary elements */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  }
+
+  .bg-brand-gradient-subtle {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.06) 100%);
+  }
+
+  /* Gradient text for headings */
+  .text-gradient {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  [data-theme="light"] .text-gradient {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 0 40px rgba(14, 165, 233, 0.05);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.1);
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background: rgba(10, 15, 26, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  [data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* Dot pattern for backgrounds */
+  .dot-pattern {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  [data-theme="light"] .dot-pattern {
+    background-image: radial-gradient(circle, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Card enhancements */
+  .card-elevated {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  [data-theme="light"] .card-elevated {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.06),
+      0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* Gradient border line */
+  .gradient-line {
+    background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+  }
+
+  [data-theme="light"] .gradient-line {
+    background: linear-gradient(90deg, transparent, #0ea5e9, #6366f1, transparent);
   }
 }
