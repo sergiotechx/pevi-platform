@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
+    const userIdParam = searchParams.get('user_id')
+
+    // Optional filter by user (beneficiary)
+    const where = userIdParam ? { user_id: parseInt(userIdParam, 10) } : undefined
 
     // Determine include configuration
     let include = undefined
@@ -23,6 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const campaignBeneficiaries = await prisma.campaignBeneficiary.findMany({
+      where,
       include,
       skip,
       take,

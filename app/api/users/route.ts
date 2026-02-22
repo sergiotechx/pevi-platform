@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
+    const roleParam = searchParams.get('role')
+
+    // Optional filter by role
+    const where = roleParam ? { role: roleParam } : undefined
 
     // Determine include configuration
     let include = undefined
@@ -23,6 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const users = await prisma.user.findMany({
+      where,
       include,
       skip,
       take,

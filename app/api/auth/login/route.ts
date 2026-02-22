@@ -39,6 +39,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Find organization if user is staff
+    const staffRecord = await prisma.organizationStaff.findFirst({
+      where: { user_id: user.user_id },
+      select: { org_id: true },
+    })
+
     // Map DB fields to frontend User shape (no password)
     return NextResponse.json({
       id: String(user.user_id),
@@ -46,6 +52,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: user.role,
       walletAddress: user.walletAddress ?? undefined,
+      orgId: staffRecord?.org_id,
     })
   } catch (error) {
     return handleApiError(error)

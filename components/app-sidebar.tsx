@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard, Megaphone, Users, FileCheck, ShieldCheck, Target, Upload,
-  ClipboardCheck, LogOut, UserCircle, PlusCircle, UserCog, Compass, BarChart3, CreditCard,
+  ClipboardCheck, LogOut, UserCircle, PlusCircle, UserCog, Compass, BarChart3, CreditCard, Bell,
 } from "lucide-react"
 import type { UserRole } from "@/lib/types"
 
@@ -28,6 +28,8 @@ const navByRole: Record<UserRole, { titleKey: string; href: string; icon: typeof
     { titleKey: "nav.exploreCampaigns", href: "/dashboard/explore", icon: Compass },
     { titleKey: "nav.myProgress", href: "/dashboard/progress", icon: BarChart3 },
     { titleKey: "nav.uploadEvidence", href: "/dashboard/evidence", icon: Upload },
+    { titleKey: "nav.payments", href: "/dashboard/payments", icon: CreditCard },
+    { titleKey: "nav.notifications", href: "/dashboard/notifications", icon: Bell },
     { titleKey: "common.profile", href: "/dashboard/profile", icon: UserCircle },
   ],
   evaluator: [

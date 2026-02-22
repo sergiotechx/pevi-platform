@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: userData.email,
         role: userData.role as User["role"],
         walletAddress: userData.walletAddress,
+        orgId: userData.orgId,
       }
       setUser(found)
       storeUser(found)

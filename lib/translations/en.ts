@@ -59,6 +59,7 @@ export const en: Record<string, string> = {
   "nav.assignedEvaluations": "Assigned Evaluations",
   "nav.auditHistory": "Audit History",
   "nav.payments": "Payments",
+  "nav.notifications": "Notifications",
 
   // Theme & Language
   "theme.toggle": "Toggle theme",
