@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import useSWR from "swr"
 import { useEffect, useState } from "react"
 import { Target, Upload, CheckCircle, Bell, Compass } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,7 @@ type ActivityForStats = { activity_id: number; evidence_ref: string | null; veri
 
 type EnrollmentWithCampaign = {
   campaignBeneficiary_id: number
+  status: string | null
   campaign: CampaignWithProgress & { milestones?: { milestone_id: number }[] }
   activities?: ActivityForStats[]
 }
@@ -29,27 +31,28 @@ export function BeneficiaryOverview() {
   const { user } = useAuth()
   const { unreadCount } = useNotifications()
   const { t } = useTranslation()
-  const [enrollments, setEnrollments] = useState<EnrollmentWithCampaign[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!user?.id) return
-    fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`)
-      .then((r) => r.json())
-      .then((data: EnrollmentWithCampaign[]) => setEnrollments(Array.isArray(data) ? data : []))
-      .catch(() => setEnrollments([]))
-      .finally(() => setLoading(false))
-  }, [user?.id])
+  const { data: enrollmentsRaw, isLoading: loading } = useSWR<EnrollmentWithCampaign[]>(
+    user?.id ? `/api/campaign-beneficiaries?user_id=${user.id}&include=full` : null,
+    (url: string) => fetch(url, { cache: "no-store" }).then((r) => r.json()),
+    { refreshInterval: 5000, revalidateOnFocus: true }
+  )
+
+  const enrollments = Array.isArray(enrollmentsRaw) ? enrollmentsRaw : []
 
   if (!user) return null
 
-  const myCampaigns = enrollments.map((e: EnrollmentWithCampaign) => e.campaign).filter(Boolean)
+  const myCampaigns = enrollments
+    .filter((e: EnrollmentWithCampaign) => e.status !== "invited")
+    .map((e: EnrollmentWithCampaign) => e.campaign)
+    .filter(Boolean)
+
   const allActivities = enrollments.flatMap((e: EnrollmentWithCampaign) => e.activities || [])
   const myEvidences = allActivities.filter((a: ActivityForStats) => a.evidence_ref).length
   const approvedMilestones = allActivities.filter(
     (a: ActivityForStats) => a.verification_status === "verified" || a.verification_status === "approved"
   ).length
-  const pendingInvitations = 0
+  const pendingInvitations = enrollments.filter((e: EnrollmentWithCampaign) => e.status === "invited").length
 
   const campaignProgress = myCampaigns.map((c: CampaignWithProgress) => {
     const enrollment = enrollments.find((e: EnrollmentWithCampaign) => e.campaign?.campaign_id === c.campaign_id)

@@ -255,6 +255,10 @@ export const es: Record<string, string> = {
   "beneficiaries.title": "Beneficiarios",
   "beneficiaries.subtitle": "Todos los beneficiarios inscritos",
   "beneficiaries.campaigns": "{{count}} campaña(s)",
+  "beneficiaries.assign": "Asignar a Campaña",
+  "beneficiaries.selectCampaign": "Seleccionar Campaña",
+  "beneficiaries.assignSuccess": "Beneficiario asignado exitosamente",
+  "beneficiaries.alreadyEnrolled": "Ya está inscrito en esta campaña",
 
   // Evaluations
   "evaluations.title": "Historial de Evaluaciones",
@@ -293,9 +297,15 @@ export const es: Record<string, string> = {
 
   // Progress
   "progress.title": "Mi Progreso",
-  "progress.subtitle": "Seguimiento de tus hitos en campañas",
+  "progress.subtitle": "Tu camino e impacto hasta ahora",
   "progress.none": "Aún no estás inscrito en ninguna campaña.",
-  "progress.reward": "{{amount}} USDC",
+  "progress.invitation": "Tienes una invitación para esta campaña",
+  "progress.invitationMessage": "Has sido invitado a la campaña: {{campaign}}",
+  "progress.viewInvitation": "Ver Invitación",
+  "progress.newCampaign": "Nueva Campaña",
+  "progress.accept": "Aceptar Invitación",
+  "progress.decline": "Rechazar",
+  "progress.reward": "Recompensa: {{amount}} USDC",
 
   // Verified
   "verified.title": "Historial de Auditoría",

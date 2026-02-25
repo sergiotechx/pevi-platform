@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { handleApiError, parsePagination } from '@/lib/api-utils'
 import { campaignBeneficiaryIncludes } from '@/lib/api-includes'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/campaign-beneficiaries
  * Get all campaign beneficiaries with optional pagination and includes
@@ -33,6 +35,7 @@ export async function GET(request: NextRequest) {
       take,
       orderBy: { campaignBeneficiary_id: 'desc' },
     })
+    console.log(`[API] GET /api/campaign-beneficiaries - Found ${campaignBeneficiaries.length} records. Statuses:`, campaignBeneficiaries.map((cb: any) => cb.status))
 
     return NextResponse.json(campaignBeneficiaries)
   } catch (error) {
@@ -48,6 +51,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log("POST /api/campaign-beneficiaries - body:", body)
 
     const campaignBeneficiary = await prisma.campaignBeneficiary.create({
       data: body,
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(campaignBeneficiary, { status: 201 })
   } catch (error) {
+    console.error("Error creating campaign beneficiary:", error)
     return handleApiError(error)
   }
 }
