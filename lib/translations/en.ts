@@ -125,8 +125,12 @@ export const en: Record<string, string> = {
   "wallet.connectingNetwork": "Connecting to Stellar network...",
   "wallet.orManual": "Or enter address manually",
   "wallet.connected": "Connected",
-  "wallet.walletAddress": "Wallet Address",
   "wallet.copyAddress": "Copy Address",
+  "wallet.alreadyLinked": "This wallet is already linked to another account.",
+  "wallet.notInstalled": "Freighter is not installed. Download it at freighter.app",
+  "wallet.signatureRejected": "Signature rejected. You must approve the request in Freighter to continue.",
+  "wallet.connectionError": "Error connecting to Freighter",
+  "wallet.walletAddress": "Wallet Address",
 
   // Campaigns page
   "campaigns.title": "Campaigns",
@@ -277,6 +281,14 @@ export const en: Record<string, string> = {
   "profile.subtitle": "Manage your account settings",
   "profile.accountInfo": "Account Information",
   "profile.userId": "User ID",
+  "profile.security": "Security",
+  "profile.changePassword": "Change Password",
+  "profile.newPassword": "New Password",
+  "profile.confirmPassword": "Confirm New Password",
+  "profile.passwordUpdated": "Password updated successfully!",
+  "profile.nameUpdated": "Name updated successfully!",
+  "profile.passwordMismatch": "Passwords do not match",
+  "profile.updatePassword": "Update Password",
 
   // Progress
   "progress.title": "My Progress",

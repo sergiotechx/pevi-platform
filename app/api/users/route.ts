@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { handleApiError, parsePagination } from '@/lib/api-utils'
 import { userIncludes } from '@/lib/api-includes'
+import bcrypt from 'bcryptjs'
 
 /**
  * GET /api/users
@@ -48,9 +49,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const data = { ...body }
+
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10)
+    }
 
     const user = await prisma.user.create({
-      data: body,
+      data,
     })
 
     return NextResponse.json(user, { status: 201 })

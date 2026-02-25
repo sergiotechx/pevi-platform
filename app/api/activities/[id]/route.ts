@@ -72,11 +72,36 @@ export async function PUT(
     }
 
     const body = await request.json()
+    const { approver_public_key, ...updateData } = body
 
     const activity = await prisma.activity.update({
       where: { activity_id: id },
-      data: body,
+      data: updateData,
+      include: {
+        award: true,
+        milestone: true,
+      }
     })
+
+    if ((updateData.verification_status === "approved" || updateData.activity_status === "approved") && activity.award?.award_id) {
+      if (activity.milestone?.escrowId && approver_public_key) {
+        try {
+          const { releaseEscrow } = await import('@/lib/trustlesswork')
+          const { signedXdr } = await releaseEscrow({
+            escrowId: activity.milestone.escrowId,
+            approverPublicKey: approver_public_key,
+          })
+          if (signedXdr) {
+            await prisma.award.update({
+              where: { award_id: activity.award.award_id },
+              data: { hash: signedXdr },
+            })
+          }
+        } catch (escrowError) {
+          console.error("Failed to release escrow:", escrowError)
+        }
+      }
+    }
 
     return NextResponse.json(activity)
   } catch (error) {

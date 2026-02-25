@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_PROJECT_REF"
+    },
+    "trustlesswork": {
+      "type": "streamable-http",
+      "url": "https://mcp.trustlesswork.com/mcp",
+      "headers": {}
+    }
+  }
+}

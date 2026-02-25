@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { handleApiError } from '@/lib/api-utils'
+import { fundEscrow } from '@/lib/trustlesswork'
 
 /**
  * POST /api/donations
@@ -27,6 +28,25 @@ export async function POST(request: NextRequest) {
         date: new Date(),
       },
     })
+
+    if (body.escrow_id && body.sender_public_key) {
+      try {
+        const { signedXdr } = await fundEscrow({
+          escrowId: body.escrow_id,
+          amount: parseFloat(String(amount)),
+          senderPublicKey: body.sender_public_key,
+        })
+        if (signedXdr) {
+          await prisma.donation.update({
+            where: { donation_id: donation.donation_id },
+            data: { hash: signedXdr },
+          })
+        }
+        return NextResponse.json({ ...donation, hash: signedXdr }, { status: 201 })
+      } catch (escrowError) {
+        console.error("Escrow fund failed (donation saved without hash):", escrowError)
+      }
+    }
 
     return NextResponse.json(donation, { status: 201 })
   } catch (error) {

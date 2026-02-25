@@ -28,6 +28,8 @@ export const viewport: Viewport = {
   themeColor: "#0ea5e9",
 }
 
+import { Toaster } from "sonner"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +41,10 @@ export default function RootLayout({
         <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider>
             <AuthProvider>
-              <NotificationProvider>{children}</NotificationProvider>
+              <NotificationProvider>
+                {children}
+                <Toaster closeButton position="top-right" richColors />
+              </NotificationProvider>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

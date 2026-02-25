@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { users, type User } from "./mock-data"
 import type { UserRole } from "./types"
 import { api } from "./api-client"
+import { isFreighterInstalled, requestFreighterAccess } from "./stellar"
 
 function storeUser(u: User | null) {
   if (typeof window === "undefined") return
@@ -25,7 +26,8 @@ interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signup: (email: string, password: string, name: string, role: UserRole) => { success: boolean; error?: string }
-  updateWallet: (walletAddress: string) => void
+  updateWallet: (walletAddress: string) => Promise<{ success: boolean; error?: string }>
+  updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>
   connectWallet: () => Promise<{ success: boolean; address?: string; error?: string }>
   disconnectWallet: () => void
   logout: () => void
@@ -53,13 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     try {
       const userData = await api.auth.login({ email, password })
+      const data = userData as any
       const found: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role as User["role"],
-        walletAddress: userData.walletAddress,
-        orgId: userData.orgId,
+        id: String(data.user_id || data.id),
+        name: data.fullName || data.name,
+        email: data.email,
+        role: data.role as User["role"],
+        walletAddress: data.walletAddress,
+        orgId: data.orgId,
       }
       setUser(found)
       storeUser(found)
@@ -79,49 +82,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true }
   }, [])
 
-  const updateWallet = useCallback((walletAddress: string) => {
-    if (user) api.users.update(parseInt(user.id, 10), { walletAddress })
-    setUser((prev) => {
-      if (!prev) return prev
-      const updated = { ...prev, walletAddress }
-      storeUser(updated)
-      return updated
-    })
+  const updateWallet = useCallback(async (walletAddress: string) => {
+    if (user) {
+      try {
+        const res = await api.users.update(parseInt(user.id, 10), { walletAddress }) as any
+        const updatedUser: User = {
+          ...user,
+          walletAddress: res.walletAddress || walletAddress
+        }
+        setUser(updatedUser)
+        storeUser(updatedUser)
+        return { success: true }
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { error?: string } }, message?: string }
+        const message = axiosErr?.response?.data?.error || axiosErr.message || "wallet.connectionFailed"
+        return { success: false, error: message }
+      }
+    }
+    return { success: false, error: "No user" }
   }, [user])
 
-  const connectWallet = useCallback((): Promise<{ success: boolean; address?: string; error?: string }> => {
-    const userId = user?.id
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-        let address = "G"
-        for (let i = 0; i < 55; i++) address += chars.charAt(Math.floor(Math.random() * chars.length))
-        setUser((prev) => {
-          if (!prev) return prev
-          const updated = { ...prev, walletAddress: address }
-          storeUser(updated)
-          return updated
-        })
-        if (userId) api.users.update(parseInt(userId, 10), { walletAddress: address })
-        resolve({ success: true, address })
-      }, 1200)
-    })
+  const updateUser = useCallback(async (data: Partial<User>) => {
+    if (user) {
+      try {
+        // Enviar a la API usando fullName si se proporciona name
+        const payload = { ...data } as any
+        if (data.name) payload.fullName = data.name
+        delete payload.name
+        delete payload.id
+
+        const res = await api.users.update(parseInt(user.id, 10), payload) as any
+
+        const updatedUser: User = {
+          ...user,
+          ...data,
+          name: res.fullName || res.name || data.name || user.name,
+          walletAddress: res.walletAddress !== undefined ? res.walletAddress : (data.walletAddress || user.walletAddress)
+        }
+
+        setUser(updatedUser)
+        storeUser(updatedUser)
+        return { success: true }
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { error?: string } }, message?: string }
+        const message = axiosErr?.response?.data?.error || axiosErr.message || "Error al actualizar usuario"
+        return { success: false, error: message }
+      }
+    }
+    return { success: false, error: "No user" }
   }, [user])
 
-  const disconnectWallet = useCallback(() => {
-    if (user) api.users.update(parseInt(user.id, 10), { walletAddress: null })
-    setUser((prev) => {
-      if (!prev) return prev
-      const updated = { ...prev, walletAddress: undefined }
-      storeUser(updated)
-      return updated
-    })
+  const connectWallet = useCallback(async (): Promise<{
+    success: boolean; address?: string; error?: string
+  }> => {
+    const installed = await isFreighterInstalled()
+    if (!installed) {
+      return {
+        success: false,
+        error: "wallet.notInstalled",
+      }
+    }
+    const result = await requestFreighterAccess()
+    if ("error" in result) return { success: false, error: result.error }
+
+    const { publicKey } = result
+    if (user?.id) {
+      try {
+        await api.users.update(parseInt(user.id, 10), { walletAddress: publicKey })
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { error?: string } }, message?: string }
+        const message = axiosErr?.response?.data?.error || axiosErr.message || "wallet.connectionFailed"
+        return { success: false, error: message }
+      }
+    }
+
+    const updatedUser: User = { ...user!, walletAddress: publicKey }
+    setUser(updatedUser)
+    storeUser(updatedUser)
+    return { success: true, address: publicKey }
+  }, [user])
+
+  const disconnectWallet = useCallback(async () => {
+    if (user) {
+      try {
+        await api.users.update(parseInt(user.id, 10), { walletAddress: null } as any)
+        const updatedUser: User = { ...user, walletAddress: undefined }
+        setUser(updatedUser)
+        storeUser(updatedUser)
+      } catch (err) {
+        console.error("Error disconnecting wallet:", err)
+      }
+    }
   }, [user])
 
   const logout = useCallback(() => { setUser(null); storeUser(null) }, [])
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, updateWallet, connectWallet, disconnectWallet, logout, isAuthenticated: !!user, isLoading }}>
+    <AuthContext.Provider value={{ user, login, signup, updateWallet, updateUser, connectWallet, disconnectWallet, logout, isAuthenticated: !!user, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

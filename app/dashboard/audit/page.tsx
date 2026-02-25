@@ -93,6 +93,7 @@ export default function AuditPage() {
     const body: Record<string, string> = {
       verification_status: vs,
       verification_note: form[activityId].verification_note,
+      approver_public_key: user?.walletAddress || "",
     }
     if (vs === "review" || vs === "rejected") {
       body.activity_status = "review"

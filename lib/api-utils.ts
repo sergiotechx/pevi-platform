@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Prisma } from '@prisma/client'
 
 /**
  * Interface for pagination parameters
@@ -17,39 +16,41 @@ export interface PaginationParams {
 export function handleApiError(error: unknown): NextResponse {
   console.error('API Error:', error)
 
+  const err = error as any
+
   // Handle Prisma errors
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (error instanceof Error && error.constructor.name.includes('PrismaClientKnownRequestError')) {
     // P2002: Unique constraint violation
-    if (error.code === 'P2002') {
+    if (err.code === 'P2002') {
       return NextResponse.json(
         {
           error: 'A record with this value already exists',
           code: 'UNIQUE_CONSTRAINT_VIOLATION',
-          details: error.meta,
+          details: err.meta,
         },
         { status: 409 }
       )
     }
 
     // P2003: Foreign key constraint violation
-    if (error.code === 'P2003') {
+    if (err.code === 'P2003') {
       return NextResponse.json(
         {
           error: 'Invalid reference to related record',
           code: 'FOREIGN_KEY_CONSTRAINT',
-          details: error.meta,
+          details: err.meta,
         },
         { status: 400 }
       )
     }
 
     // P2025: Record not found
-    if (error.code === 'P2025') {
+    if (err.code === 'P2025') {
       return NextResponse.json(
         {
           error: 'Record not found',
           code: 'NOT_FOUND',
-          details: error.meta,
+          details: err.meta,
         },
         { status: 404 }
       )
@@ -60,19 +61,19 @@ export function handleApiError(error: unknown): NextResponse {
       {
         error: 'Database operation failed',
         code: 'DATABASE_ERROR',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
       },
       { status: 400 }
     )
   }
 
   // Handle Prisma validation errors
-  if (error instanceof Prisma.PrismaClientValidationError) {
+  if (error instanceof Error && error.constructor.name.includes('PrismaClientValidationError')) {
     return NextResponse.json(
       {
         error: 'Invalid data provided',
         code: 'VALIDATION_ERROR',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
       },
       { status: 400 }
     )
@@ -93,9 +94,9 @@ export function handleApiError(error: unknown): NextResponse {
   if (error instanceof Error) {
     return NextResponse.json(
       {
-        error: error.message || 'Internal server error',
+        error: err.message || 'Internal server error',
         code: 'INTERNAL_ERROR',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        details: err.stack,
       },
       { status: 500 }
     )

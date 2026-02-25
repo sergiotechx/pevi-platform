@@ -84,6 +84,7 @@ model Milestone {
   status        String?
   total_amount  Float?
   currency      String?
+  escrowId      String?
 
   // Relations
   campaign   Campaign   @relation(fields: [campaign_id], references: [campaign_id])

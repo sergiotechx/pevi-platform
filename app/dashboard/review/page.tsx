@@ -92,6 +92,7 @@ export default function ReviewPage() {
     const body: Record<string, string> = {
       evidence_status: es,
       evaluation_note: form[activityId].evaluation_note,
+      approver_public_key: user?.walletAddress || "",
     }
     if (es === "approved" || es === "rejected") {
       body.activity_status = es

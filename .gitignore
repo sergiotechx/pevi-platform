@@ -20,3 +20,16 @@ node_modules
 prisma/migrations/
 #MCP
 .mcp.json
+.mcp.json.local
+mcp_tools.json
+mcp_tools_utf8.json
+
+# Temporary error and log files
+*_error.txt
+error.txt
+error_utf8.txt
+err.html
+err2.html
+
+# Documentation
+*.md

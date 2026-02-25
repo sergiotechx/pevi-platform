@@ -11,10 +11,11 @@ import { apiClient } from "@/lib/axios-client"
 interface DonationModalProps {
   campaignId: string | number
   campaignName: string
+  escrowId?: string
   onClose: () => void
 }
 
-export function DonationModal({ campaignId, campaignName, onClose }: DonationModalProps) {
+export function DonationModal({ campaignId, campaignName, escrowId, onClose }: DonationModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const { user } = useAuth()
   const { t } = useTranslation()
@@ -40,6 +41,8 @@ export function DonationModal({ campaignId, campaignName, onClose }: DonationMod
         user_id: parseInt(user.id),
         campaign_id: numericId,
         amount: parseFloat(amount),
+        escrow_id: escrowId,
+        sender_public_key: user.walletAddress,
       })
     } catch {
       // continue to show success regardless

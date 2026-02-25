@@ -125,8 +125,12 @@ export const es: Record<string, string> = {
   "wallet.connectingNetwork": "Conectando a la red Stellar...",
   "wallet.orManual": "O ingresa la dirección manualmente",
   "wallet.connected": "Conectada",
-  "wallet.walletAddress": "Dirección de Billetera",
   "wallet.copyAddress": "Copiar Dirección",
+  "wallet.alreadyLinked": "Esta wallet ya se encuentra vinculada a otra cuenta.",
+  "wallet.notInstalled": "Freighter no está instalado. Descárgalo en freighter.app",
+  "wallet.signatureRejected": "Firma rechazada. Debes aprobar la solicitud en Freighter para continuar.",
+  "wallet.connectionError": "Error al conectar con Freighter",
+  "wallet.walletAddress": "Dirección de Billetera",
 
   // Campaigns page
   "campaigns.title": "Campañas",
@@ -277,6 +281,14 @@ export const es: Record<string, string> = {
   "profile.subtitle": "Gestiona la configuración de tu cuenta",
   "profile.accountInfo": "Información de la Cuenta",
   "profile.userId": "ID de Usuario",
+  "profile.security": "Seguridad",
+  "profile.changePassword": "Cambiar Contraseña",
+  "profile.newPassword": "Nueva Contraseña",
+  "profile.confirmPassword": "Confirmar Nueva Contraseña",
+  "profile.passwordUpdated": "¡Contraseña actualizada exitosamente!",
+  "profile.nameUpdated": "¡Nombre actualizado exitosamente!",
+  "profile.passwordMismatch": "Las contraseñas no coinciden",
+  "profile.updatePassword": "Actualizar Contraseña",
 
   // Progress
   "progress.title": "Mi Progreso",
