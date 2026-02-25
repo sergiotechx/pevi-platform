@@ -22,6 +22,7 @@ export const en: Record<string, string> = {
   "common.description": "Description",
   "common.submitted": "Submitted",
   "common.navigation": "Navigation",
+  "common.error": "An error occurred. Please try again.",
 
   // Roles
   "role.corporation": "Corporation",
@@ -246,10 +247,12 @@ export const en: Record<string, string> = {
   "explore.subtitle": "Discover campaigns you can join",
   "explore.none": "No campaigns available at the moment.",
   "explore.enrolled": "Enrolled",
+  "explore.pending": "Pending",
   "explore.apply": "Apply to Join",
   "explore.decline": "Decline",
   "explore.budget": "Budget: {{amount}} {{currency}}",
   "explore.milestones": "{{count}} milestones",
+  "explore.startDate": "Start date",
 
   // Beneficiaries
   "beneficiaries.title": "Beneficiaries",
@@ -259,6 +262,12 @@ export const en: Record<string, string> = {
   "beneficiaries.selectCampaign": "Select Campaign",
   "beneficiaries.assignSuccess": "Beneficiary assigned successfully",
   "beneficiaries.alreadyEnrolled": "Already enrolled in this campaign",
+  "beneficiaries.tabs.all": "All Beneficiaries",
+  "beneficiaries.tabs.pending": "Pending Requests",
+  "beneficiaries.approve": "Approve",
+  "beneficiaries.reject": "Reject",
+  "beneficiaries.pendingRequests": "Pending Enrollment Requests",
+  "beneficiaries.noPendingRequests": "No pending requests found.",
 
   // Evaluations
   "evaluations.title": "Evaluation History",
@@ -298,6 +307,13 @@ export const en: Record<string, string> = {
   "notifications.viewEvaluations": "View Evaluations",
   "notifications.evidenceRejectedTitle": "Evidence Rejected",
   "notifications.evidenceRejectedMessage": "Your evidence for milestone '{{milestone}}' requires corrections. Please review the comments.",
+  "notifications.applicationRequestedTitle": "New Application Request",
+  "notifications.applicationRequestedMessage": "{{beneficiary}} has requested to join your campaign: {{campaign}}",
+  "notifications.viewApplications": "View Applications",
+  "notifications.applicationApprovedTitle": "Application Approved",
+  "notifications.applicationApprovedMessage": "Your application to join the campaign '{{campaign}}' has been approved!",
+  "notifications.applicationRejectedTitle": "Application Rejected",
+  "notifications.applicationRejectedMessage": "Your application to join the campaign '{{campaign}}' was not approved.",
 
   // Profile
   "profile.title": "Profile",
@@ -429,6 +445,8 @@ export const en: Record<string, string> = {
   "public.goToDashboard": "Go to Dashboard",
   "public.alreadyEnrolled": "You are enrolled in this project",
   "public.alreadyEnrolledSubtitle": "Track your progress and milestones from your dashboard.",
+  "public.applicationPending": "Application Pending",
+  "public.applicationPendingSubtitle": "Your application to join this project is currently under review.",
 
   // About page
   "about.title": "About PEVI",

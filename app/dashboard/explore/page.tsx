@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { api } from "@/lib/api-client"
+import { formatDate } from "@/lib/date-utils"
 
 type CampaignItem = {
   campaign_id: number
@@ -22,29 +23,37 @@ export default function ExplorePage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([])
-  const [enrolledCampaignIds, setEnrolledCampaignIds] = useState<Set<number>>(new Set())
+  const [enrollmentStatuses, setEnrollmentStatuses] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [enrollingId, setEnrollingId] = useState<number | null>(null)
 
   useEffect(() => {
-    api.campaigns.getAll({ include: "basic" }).then((data: CampaignItem[]) => {
-      setCampaigns(Array.isArray(data) ? data : [])
+    api.campaigns.getAll({ include: "basic" }).then((data) => {
+      const campaignsData = data as CampaignItem[]
+      setCampaigns(Array.isArray(campaignsData) ? campaignsData : [])
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     if (!user?.id) return
-    fetch(`/api/campaign-beneficiaries?user_id=${user.id}`)
+    fetch(`/api/campaign-beneficiaries?user_id=${user.id}`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
       .then((r) => r.json())
-      .then((data: { campaign_id: number }[]) => {
-        const ids = new Set((Array.isArray(data) ? data : []).map((e) => e.campaign_id))
-        setEnrolledCampaignIds(ids)
+      .then((data: { campaign_id: number; status: string }[]) => {
+        const statusesMap = new Map<number, string>()
+        if (Array.isArray(data)) {
+          data.forEach(e => statusesMap.set(e.campaign_id, e.status))
+        }
+        setEnrollmentStatuses(statusesMap)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [user?.id])
 
-  const available = campaigns.filter((c) => c.status === "active" || c.status === "published")
+  const available = campaigns.filter((c) => {
+    const isAvailableStatus = c.status === "active" || c.status === "published"
+    const isRejected = enrollmentStatuses.get(c.campaign_id) === 'rejected'
+    return isAvailableStatus && !isRejected
+  })
 
   const handleEnroll = async (campaignId: number) => {
     if (!user?.id) return
@@ -53,9 +62,13 @@ export default function ExplorePage() {
       await api.campaignBeneficiaries.create({
         campaign_id: campaignId,
         user_id: parseInt(String(user.id), 10),
-        status: "active",
+        status: "pending",
       })
-      setEnrolledCampaignIds((prev) => new Set(prev).add(campaignId))
+      setEnrollmentStatuses((prev) => {
+        const nMap = new Map(prev)
+        nMap.set(campaignId, 'pending')
+        return nMap
+      })
     } catch {
       // leave as not enrolled
     } finally {
@@ -73,7 +86,9 @@ export default function ExplorePage() {
           <p className="text-sm text-base-content/60">{t("explore.none")}</p>
         ) : (
           available.map((c) => {
-            const alreadyIn = enrolledCampaignIds.has(c.campaign_id)
+            const status = enrollmentStatuses.get(c.campaign_id)
+            const isPending = status === 'pending'
+            const isEnrolled = status === 'active'
             const enrolling = enrollingId === c.campaign_id
             return (
               <Card key={c.campaign_id} className="border-base-300/50">
@@ -88,11 +103,13 @@ export default function ExplorePage() {
                   <p className="mt-2 text-xs text-base-content/60">
                     {c.cost != null && t("explore.budget", { amount: c.cost.toLocaleString(), currency: "USDC" })}
                     {" · "}{t("explore.milestones", { count: c.milestones?.length ?? 0 })}
-                    {c.start_at && ` · ${c.start_at}`}
+                    {c.start_at && ` · ${formatDate(c.start_at)}`}
                   </p>
                   <div className="mt-3">
-                    {alreadyIn ? (
+                    {isEnrolled ? (
                       <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">{t("explore.enrolled")}</span>
+                    ) : isPending ? (
+                      <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-500">{t("explore.pending")}</span>
                     ) : (
                       <div className="flex gap-2">
                         <Button size="sm" disabled={enrolling} onClick={() => handleEnroll(c.campaign_id)}>

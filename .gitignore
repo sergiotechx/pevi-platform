@@ -23,6 +23,7 @@ prisma/migrations/
 .mcp.json.local
 mcp_tools.json
 mcp_tools_utf8.json
+.gemini/*
 
 # Temporary error and log files
 *_error.txt

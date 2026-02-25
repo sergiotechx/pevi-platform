@@ -22,6 +22,7 @@ export const es: Record<string, string> = {
   "common.description": "Descripción",
   "common.submitted": "Enviado",
   "common.navigation": "Navegación",
+  "common.error": "Ha ocurrido un error. Por favor intente de nuevo.",
 
   // Roles
   "role.corporation": "Corporación",
@@ -246,10 +247,12 @@ export const es: Record<string, string> = {
   "explore.subtitle": "Descubre campañas a las que puedes unirte",
   "explore.none": "No hay campañas disponibles en este momento.",
   "explore.enrolled": "Inscrito",
+  "explore.pending": "Pendiente",
   "explore.apply": "Solicitar Unirse",
   "explore.decline": "Rechazar",
   "explore.budget": "Presupuesto: {{amount}} {{currency}}",
   "explore.milestones": "{{count}} hitos",
+  "explore.startDate": "Fecha de inicio",
 
   // Beneficiaries
   "beneficiaries.title": "Beneficiarios",
@@ -259,6 +262,12 @@ export const es: Record<string, string> = {
   "beneficiaries.selectCampaign": "Seleccionar Campaña",
   "beneficiaries.assignSuccess": "Beneficiario asignado exitosamente",
   "beneficiaries.alreadyEnrolled": "Ya está inscrito en esta campaña",
+  "beneficiaries.tabs.all": "Todos los Beneficiarios",
+  "beneficiaries.tabs.pending": "Solicitudes Pendientes",
+  "beneficiaries.approve": "Aprobar",
+  "beneficiaries.reject": "Rechazar",
+  "beneficiaries.pendingRequests": "Solicitudes de Inscripción Pendientes",
+  "beneficiaries.noPendingRequests": "No se encontraron solicitudes pendientes.",
 
   // Evaluations
   "evaluations.title": "Historial de Evaluaciones",
@@ -298,6 +307,13 @@ export const es: Record<string, string> = {
   "notifications.viewEvaluations": "Ver Evaluaciones",
   "notifications.evidenceRejectedTitle": "Evidencia Rechazada",
   "notifications.evidenceRejectedMessage": "Tu evidencia para el hito '{{milestone}}' necesita correcciones. Revisa los comentarios.",
+  "notifications.applicationRequestedTitle": "Nueva Solicitud de Inscripción",
+  "notifications.applicationRequestedMessage": "{{beneficiary}} ha solicitado unirse a tu campaña: {{campaign}}",
+  "notifications.viewApplications": "Ver Solicitudes",
+  "notifications.applicationApprovedTitle": "Solicitud Aprobada",
+  "notifications.applicationApprovedMessage": "¡Tu solicitud para unirte a la campaña '{{campaign}}' ha sido aprobada!",
+  "notifications.applicationRejectedTitle": "Solicitud Rechazada",
+  "notifications.applicationRejectedMessage": "Tu solicitud para unirte a la campaña '{{campaign}}' no fue aprobada.",
 
   // Profile
   "profile.title": "Perfil",
@@ -429,6 +445,8 @@ export const es: Record<string, string> = {
   "public.goToDashboard": "Ir al Panel",
   "public.alreadyEnrolled": "Ya est\u00e1s inscrito en este proyecto",
   "public.alreadyEnrolledSubtitle": "Sigue tu progreso e hitos desde tu panel.",
+  "public.applicationPending": "Solicitud Pendiente",
+  "public.applicationPendingSubtitle": "Tu solicitud para unirte a este proyecto est\u00e1 siendo revisada.",
 
   // About page
   "about.title": "Qui\u00e9nes Somos",

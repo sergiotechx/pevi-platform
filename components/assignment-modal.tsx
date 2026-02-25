@@ -69,27 +69,6 @@ export function AssignmentModal({ beneficiaryId, beneficiaryName, onClose }: Ass
             }
 
             setSuccess(true)
-
-            // Trigger notification for the beneficiary
-            try {
-                await fetch("/api/notifications", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        user_id: beneficiaryId,
-                        title: "progress.invitation",
-                        message: "progress.invitationMessage",
-                        metadata: { campaign: campaigns.find(c => c.campaign_id === campaignId)?.title || "progress.newCampaign" },
-                        type: "campaign",
-                        actionUrl: "/dashboard/progress",
-                        actionLabel: "progress.viewInvitation"
-                    }),
-                })
-            } catch (notifyErr) {
-                console.error("Failed to send notification:", notifyErr)
-                // We don't throw here to avoid failing the whole assignment if notification fails
-            }
-
             setTimeout(handleClose, 2000)
         } catch (err: any) {
             setError(err.message)

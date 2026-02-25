@@ -16,9 +16,18 @@ export async function GET(request: NextRequest) {
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
     const userIdParam = searchParams.get('user_id')
+    const campaignIdParam = searchParams.get('campaign_id')
+    const orgIdParam = searchParams.get('org_id')
+    const statusParam = searchParams.get('status')
 
-    // Optional filter by user (beneficiary)
-    const where = userIdParam ? { user_id: parseInt(userIdParam, 10) } : undefined
+    // Prepare where clause
+    const where: any = {}
+    if (userIdParam) where.user_id = parseInt(userIdParam, 10)
+    if (campaignIdParam) where.campaign_id = parseInt(campaignIdParam, 10)
+    if (statusParam) where.status = statusParam
+    if (orgIdParam) {
+      where.campaign = { org_id: parseInt(orgIdParam, 10) }
+    }
 
     // Determine include configuration
     let include = undefined
@@ -29,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const campaignBeneficiaries = await prisma.campaignBeneficiary.findMany({
-      where,
+      where: Object.keys(where).length > 0 ? where : undefined,
       include,
       skip,
       take,
@@ -53,9 +62,81 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("POST /api/campaign-beneficiaries - body:", body)
 
-    const campaignBeneficiary = await prisma.campaignBeneficiary.create({
-      data: body,
+    const campaignBeneficiary = await prisma.campaignBeneficiary.upsert({
+      where: {
+        campaign_id_user_id: {
+          campaign_id: body.campaign_id,
+          user_id: body.user_id,
+        }
+      },
+      update: {
+        status: body.status,
+      },
+      create: {
+        campaign_id: body.campaign_id,
+        user_id: body.user_id,
+        status: body.status,
+      },
     })
+
+    // Create notifications based on status
+    try {
+      const campaign = await prisma.campaign.findUnique({
+        where: { campaign_id: body.campaign_id },
+        select: { title: true, org_id: true }
+      })
+
+      if (campaign && body.user_id) {
+        // 1. Notify the beneficiary (Welcome/Invitation notification)
+        await prisma.notification.create({
+          data: {
+            user_id: body.user_id,
+            title: body.status === "pending" ? "public.applicationPending" : "progress.invitation",
+            message: body.status === "pending" ? "public.applicationPendingSubtitle" : "progress.invitationMessage",
+            type: "progress",
+            metadata: { campaign: campaign.title },
+            actionUrl: `/dashboard/progress?campaignId=${body.campaign_id}`,
+            actionLabel: "notifications.viewCampaign"
+          }
+        })
+
+        // 2. If status is pending, notify the Corporation (Organization Staff)
+        if (body.status === "pending") {
+          const beneficiary = await prisma.user.findUnique({
+            where: { user_id: body.user_id },
+            select: { fullName: true }
+          })
+
+          const corpStaff = await prisma.organizationStaff.findMany({
+            where: { org_id: campaign.org_id },
+            select: { user_id: true }
+          })
+
+          const corpNotifications = corpStaff.map(staff => ({
+            user_id: staff.user_id,
+            title: "notifications.applicationRequestedTitle",
+            message: "notifications.applicationRequestedMessage",
+            type: "campaign",
+            metadata: {
+              campaign: campaign.title,
+              beneficiary: beneficiary?.fullName || "A beneficiary"
+            },
+            actionUrl: `/dashboard/beneficiaries?campaignId=${body.campaign_id}`,
+            actionLabel: "notifications.viewApplications"
+          }))
+
+          if (corpNotifications.length > 0) {
+            await prisma.notification.createMany({
+              data: corpNotifications as any
+            })
+          }
+        }
+
+        console.log(`[API] Created enrollment notifications for user ${body.user_id} regarding campaign ${body.campaign_id}`)
+      }
+    } catch (notifyErr) {
+      console.error("Failed to create enrollment notifications:", notifyErr)
+    }
 
     return NextResponse.json(campaignBeneficiary, { status: 201 })
   } catch (error) {

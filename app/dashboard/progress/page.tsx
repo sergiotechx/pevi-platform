@@ -27,10 +27,10 @@ export default function ProgressPage() {
   const fetchEnrollments = async () => {
     if (!user?.id) return
     try {
-      const r = await fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`)
+      const r = await fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
       const data = await r.json()
       console.log("Fetched enrollments for progress:", data)
-      setEnrollments(Array.isArray(data) ? data : [])
+      setEnrollments(Array.isArray(data) ? data.filter((e: any) => e.status !== "rejected") : [])
     } catch (err) {
       console.error("Error fetching enrollments:", err)
       setEnrollments([])
@@ -131,7 +131,16 @@ export default function ProgressPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {isInvited ? (
+                {e.status === "pending" ? (
+                  <div className="flex flex-col gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 text-center animate-in fade-in zoom-in duration-300">
+                    <div>
+                      <h3 className="font-bold text-amber-500">{t("public.applicationPending")}</h3>
+                      <p className="text-xs text-base-content/60 mt-1">
+                        {t("public.applicationPendingSubtitle")}
+                      </p>
+                    </div>
+                  </div>
+                ) : isInvited ? (
                   <div className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center animate-in fade-in zoom-in duration-300">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <PlusCircle className="h-6 w-6" />

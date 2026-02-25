@@ -92,31 +92,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Notify Angel Investors
-    try {
-      const investors = await prisma.user.findMany({
-        where: { role: "angel_investor" }
-      })
-
-      const notifications = investors.map(inv => ({
-        user_id: inv.user_id,
-        title: "notifications.newCampaignTitle",
-        message: "notifications.newCampaignMessage",
-        metadata: { campaign: campaign.title },
-        type: "campaign",
-        actionUrl: `/projects/${campaign.campaign_id}`,
-        actionLabel: "notifications.viewCampaign"
-      }))
-
-      if (notifications.length > 0) {
-        await prisma.notification.createMany({
-          data: notifications
-        })
-      }
-    } catch (notifyErr) {
-      console.error("Failed to notify angel investors:", notifyErr)
-    }
-
     return NextResponse.json(campaign, { status: 201 })
   } catch (error) {
     return handleApiError(error)

@@ -63,10 +63,39 @@ export async function PUT(
 
     const body = await request.json()
 
+    // Get the previous state to check if status is changing
+    const existing = await prisma.campaignBeneficiary.findUnique({
+      where: { campaignBeneficiary_id: id },
+      include: { campaign: true }
+    })
+
     const campaignBeneficiary = await prisma.campaignBeneficiary.update({
       where: { campaignBeneficiary_id: id },
       data: body,
     })
+
+    // Send notification if status changed from pending
+    if (existing && existing.status === 'pending' && body.status && body.status !== 'pending') {
+      try {
+        const isApproved = body.status === 'active'
+        const title = isApproved ? 'notifications.applicationApprovedTitle' : 'notifications.applicationRejectedTitle'
+        const message = isApproved ? 'notifications.applicationApprovedMessage' : 'notifications.applicationRejectedMessage'
+
+        await prisma.notification.create({
+          data: {
+            user_id: campaignBeneficiary.user_id,
+            title,
+            message,
+            type: 'campaign',
+            metadata: { campaign: existing.campaign.title },
+            actionUrl: isApproved ? `/dashboard/progress?campaignId=${existing.campaign_id}` : undefined,
+            actionLabel: isApproved ? 'notifications.viewCampaign' : undefined
+          }
+        })
+      } catch (notifyErr) {
+        console.error("Failed to notify user about application status:", notifyErr)
+      }
+    }
 
     return NextResponse.json(campaignBeneficiary)
   } catch (error) {

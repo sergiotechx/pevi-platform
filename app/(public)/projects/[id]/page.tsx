@@ -9,6 +9,8 @@ import { useTranslation } from "@/lib/i18n-context"
 import { StatusBadge } from "@/components/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api-client"
+import { toast } from "sonner"
 import {
   ArrowLeft,
   CalendarDays,
@@ -20,6 +22,8 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react"
+
+import { formatDate } from "@/lib/date-utils"
 
 function formatNumber(n: number): string {
   return new Intl.NumberFormat("en-US").format(n)
@@ -35,6 +39,7 @@ interface Milestone {
 interface CampaignBeneficiary {
   campaignBeneficiary_id: number
   user_id: number
+  status: string
 }
 
 interface Organization {
@@ -74,10 +79,11 @@ export default function ProjectDetailsPage({
   const [showDonation, setShowDonation] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
+  const [enrolling, setEnrolling] = useState(false)
   const [notFoundFlag, setNotFoundFlag] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/campaigns/${id}?include=basic`)
+    fetch(`/api/campaigns/${id}?include=basic`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
       .then((r) => {
         if (r.status === 404) { setNotFoundFlag(true); return null }
         return r.json()
@@ -85,6 +91,28 @@ export default function ProjectDetailsPage({
       .then((data) => { if (data) setCampaign(data) })
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleJoin = async () => {
+    if (!user?.id || !campaign) return
+    setEnrolling(true)
+    try {
+      await api.campaignBeneficiaries.create({
+        campaign_id: campaign.campaign_id,
+        user_id: parseInt(String(user.id), 10),
+        status: "pending",
+      })
+      toast.success(t("beneficiaries.assignSuccess"))
+
+      // Refresh campaign data to reflect new status
+      const response = await fetch(`/api/campaigns/${id}?include=basic`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
+      const data = await response.json()
+      if (data) setCampaign(data)
+    } catch (err) {
+      toast.error(t("common.error"))
+    } finally {
+      setEnrolling(false)
+    }
+  }
 
   if (notFoundFlag) notFound()
 
@@ -100,12 +128,15 @@ export default function ProjectDetailsPage({
 
   if (!campaign) return null
 
-  const isAlreadyBeneficiary =
+  const userEnrollment =
     isAuthenticated && user
-      ? campaign.campaignBeneficiaries.some(
+      ? campaign.campaignBeneficiaries.find(
         (cb) => cb.user_id === parseInt(user.id, 10)
       )
-      : false
+      : null
+
+  const isPending = userEnrollment?.status === "pending"
+  const isEnrolled = userEnrollment?.status === "active"
 
   const approvedMilestones = campaign.milestones.filter(
     (m) => m.status === "approved"
@@ -177,8 +208,8 @@ export default function ProjectDetailsPage({
         <Card className="border-base-300/50">
           <CardContent className="flex flex-col items-center py-4">
             <CalendarDays className="mb-1 h-5 w-5 text-info" />
-            <p className="text-sm font-bold text-base-content">
-              {campaign.start_at}
+            <p className="text-lg font-bold text-base-content">
+              {formatDate(campaign.start_at)}
             </p>
             <p className="text-xs text-base-content/50">
               {t("explore.startDate") || "Start date"}
@@ -273,7 +304,7 @@ export default function ProjectDetailsPage({
                 </Link>
               </div>
             </>
-          ) : isAlreadyBeneficiary ? (
+          ) : isEnrolled ? (
             <>
               <h3 className="font-heading text-lg font-bold text-emerald-500">
                 {t("public.alreadyEnrolled")}
@@ -283,6 +314,20 @@ export default function ProjectDetailsPage({
               </p>
               <div className="mt-5">
                 <Link href="/dashboard/progress">
+                  <Button>{t("public.goToDashboard")}</Button>
+                </Link>
+              </div>
+            </>
+          ) : isPending ? (
+            <>
+              <h3 className="font-heading text-lg font-bold text-amber-500">
+                {t("public.applicationPending")}
+              </h3>
+              <p className="mt-2 text-sm text-base-content/60">
+                {t("public.applicationPendingSubtitle")}
+              </p>
+              <div className="mt-5">
+                <Link href="/dashboard">
                   <Button>{t("public.goToDashboard")}</Button>
                 </Link>
               </div>
@@ -297,7 +342,16 @@ export default function ProjectDetailsPage({
               </p>
               <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 {user?.role === "beneficiary" && (
-                  <Button>{t("public.joinProject")}</Button>
+                  <Button onClick={handleJoin} disabled={enrolling}>
+                    {enrolling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t("common.loading")}
+                      </>
+                    ) : (
+                      t("public.joinProject")
+                    )}
+                  </Button>
                 )}
                 {user?.role === "angel_investor" && (
                   <Button onClick={() => setShowDonation(true)}>

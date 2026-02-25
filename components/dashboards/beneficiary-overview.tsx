@@ -43,7 +43,7 @@ export function BeneficiaryOverview() {
   if (!user) return null
 
   const myCampaigns = enrollments
-    .filter((e: EnrollmentWithCampaign) => e.status !== "invited")
+    .filter((e: EnrollmentWithCampaign) => e.status === "active")
     .map((e: EnrollmentWithCampaign) => e.campaign)
     .filter(Boolean)
 

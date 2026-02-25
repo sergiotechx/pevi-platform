@@ -16,7 +16,7 @@ type CampaignItem = {
   campaign_id: number
   title: string
   status: string | null
-  campaignBeneficiaries?: { campaignBeneficiary_id: number }[]
+  campaignBeneficiaries?: { campaignBeneficiary_id: number; status: string }[]
   milestones?: { milestone_id: number; status: string | null }[]
 }
 
@@ -33,7 +33,12 @@ export function CorporationOverview() {
   const campaigns = Array.isArray(campaignsRaw) ? campaignsRaw : []
 
   const activeCampaigns = campaigns.filter((c) => c.status === "active")
-  const totalBeneficiaries = new Set(campaigns.flatMap((c) => (c.campaignBeneficiaries ?? []).map((cb) => cb.campaignBeneficiary_id))).size
+  const totalBeneficiaries = new Set(
+    campaigns.flatMap((c) => (c.campaignBeneficiaries ?? [])
+      .filter((cb) => cb.status === "active")
+      .map((cb) => cb.campaignBeneficiary_id)
+    )
+  ).size
   const totalMilestones = campaigns.reduce((acc, c) => acc + (c.milestones?.length ?? 0), 0)
 
   return (
@@ -70,15 +75,18 @@ export function CorporationOverview() {
             ) : campaigns.length === 0 ? (
               <p className="text-sm text-base-content/50">{t("notifications.empty")}</p>
             ) : (
-              campaigns.slice(0, 3).map((c) => (
-                <div key={c.campaign_id} className="flex items-center justify-between rounded-xl border border-base-300/30 bg-base-300/20 p-4 transition-colors hover:bg-base-300/40">
-                  <div>
-                    <p className="text-sm font-semibold text-base-content">{c.title}</p>
-                    <p className="text-xs text-base-content/50">{t("corpOverview.milestonesAndBeneficiaries", { milestones: c.milestones?.length ?? 0, beneficiaries: c.campaignBeneficiaries?.length ?? 0 })}</p>
+              campaigns.slice(0, 3).map((c) => {
+                const activeBens = (c.campaignBeneficiaries ?? []).filter(cb => cb.status === 'active').length
+                return (
+                  <div key={c.campaign_id} className="flex items-center justify-between rounded-xl border border-base-300/30 bg-base-300/20 p-4 transition-colors hover:bg-base-300/40">
+                    <div>
+                      <p className="text-sm font-semibold text-base-content">{c.title}</p>
+                      <p className="text-xs text-base-content/50">{t("corpOverview.milestonesAndBeneficiaries", { milestones: c.milestones?.length ?? 0, beneficiaries: activeBens })}</p>
+                    </div>
+                    <StatusBadge status={c.status ?? "draft"} />
                   </div>
-                  <StatusBadge status={c.status ?? "draft"} />
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </CardContent>

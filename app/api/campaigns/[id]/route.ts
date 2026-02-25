@@ -64,10 +64,45 @@ export async function PUT(
 
     const body = await request.json()
 
+    // get existing to check status transition
+    const existing = await prisma.campaign.findUnique({ where: { campaign_id: id } })
+
     const campaign = await prisma.campaign.update({
       where: { campaign_id: id },
       data: body,
     })
+
+    // Notify if campaign is being published (status changes to 'active')
+    if (existing && existing.status !== 'active' && campaign.status === 'active') {
+      try {
+        const usersToNotify = await prisma.user.findMany({
+          where: {
+            OR: [
+              { role: "angel_investor" },
+              { role: "beneficiary" }
+            ]
+          }
+        })
+
+        const notifications = usersToNotify.map(u => ({
+          user_id: u.user_id,
+          title: "notifications.newCampaignTitle",
+          message: "notifications.newCampaignMessage",
+          metadata: { campaign: campaign.title },
+          type: "campaign",
+          actionUrl: `/projects/${campaign.campaign_id}`,
+          actionLabel: "notifications.viewCampaign"
+        }))
+
+        if (notifications.length > 0) {
+          await prisma.notification.createMany({
+            data: notifications as any
+          })
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify users of published campaign:", notifyErr)
+      }
+    }
 
     return NextResponse.json(campaign)
   } catch (error) {

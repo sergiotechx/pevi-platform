@@ -16,6 +16,7 @@ type MilestoneItem = { milestone_id: number; name: string | null }
 type ActivityItem = { activity_id: number; milestone_id: number; evidence_ref: string | null; activity_observation: string | null; evidence_status: string | null }
 type EnrollmentItem = {
   campaignBeneficiary_id: number
+  status: string | null
   campaign: { campaign_id: number; title: string; milestones?: MilestoneItem[] }
   activities?: ActivityItem[]
 }
@@ -35,26 +36,28 @@ export default function EvidencePage() {
 
   useEffect(() => {
     if (!user?.id) return
-    fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`)
+    fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
       .then((r) => r.json())
       .then((data: EnrollmentItem[]) => setEnrollments(Array.isArray(data) ? data : []))
       .catch(() => setEnrollments([]))
       .finally(() => setLoading(false))
   }, [user?.id])
 
-  const slots: Slot[] = enrollments.flatMap((e) =>
-    (e.campaign.milestones ?? []).map((m) => {
-      const activity = e.activities?.find((a) => a.milestone_id === m.milestone_id)
-      return {
-        key: `${e.campaignBeneficiary_id}-${m.milestone_id}`,
-        campaignTitle: e.campaign.title,
-        milestoneName: m.name ?? "",
-        milestoneId: m.milestone_id,
-        campaignBeneficiaryId: e.campaignBeneficiary_id,
-        activityId: activity?.activity_id,
-      }
-    })
-  )
+  const slots: Slot[] = enrollments
+    .filter(e => e.status === "active")
+    .flatMap((e) =>
+      (e.campaign.milestones ?? []).map((m) => {
+        const activity = e.activities?.find((a) => a.milestone_id === m.milestone_id)
+        return {
+          key: `${e.campaignBeneficiary_id}-${m.milestone_id}`,
+          campaignTitle: e.campaign.title,
+          milestoneName: m.name ?? "",
+          milestoneId: m.milestone_id,
+          campaignBeneficiaryId: e.campaignBeneficiary_id,
+          activityId: activity?.activity_id,
+        }
+      })
+    )
 
   const submittedActivities = enrollments.flatMap((e) => (e.activities ?? []).filter((a) => a.evidence_ref || a.activity_observation))
 
@@ -83,7 +86,7 @@ export default function EvidencePage() {
       setSelectedSlot("")
       setLink("")
       setDescription("")
-      fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`)
+      fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
         .then((r) => r.json())
         .then((data: EnrollmentItem[]) => setEnrollments(Array.isArray(data) ? data : []))
       setTimeout(() => setSuccess(false), 2500)
@@ -112,8 +115,8 @@ export default function EvidencePage() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label>{t("evidence.selectMilestone")}</Label>
-                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={loading}>
-                  <SelectTrigger className="bg-base-100/50"><SelectValue placeholder={t("evidence.chooseMilestone")} /></SelectTrigger>
+                <Select value={selectedSlot} onValueChange={setSelectedSlot}>
+                  <SelectTrigger disabled={loading} className="bg-base-100/50"><SelectValue placeholder={t("evidence.chooseMilestone")} /></SelectTrigger>
                   <SelectContent>
                     {slots.map((s) => (
                       <SelectItem key={s.key} value={s.key}>
