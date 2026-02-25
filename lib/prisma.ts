@@ -11,9 +11,9 @@ function createPrismaClient() {
   // Use a constrained connection pool to prevent exhausting Supabase Session mode limits.
   const pool = globalForPrisma.pool ?? new Pool({
     connectionString: process.env.DATABASE_URL!,
-    max: 3, // Restrict maximum concurrent DB connections per instance
+    max: 5, // Allow more concurrent DB connections for page loads with multiple API calls
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 15000, // Give more time for Supabase cold starts
   })
 
   if (!globalForPrisma.pool) {
@@ -30,7 +30,7 @@ function createPrismaClient() {
 
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   })
 }
 

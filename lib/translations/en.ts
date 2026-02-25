@@ -150,6 +150,7 @@ export const en: Record<string, string> = {
   "donation.button": "Donate",
   "donation.cancel": "Cancel",
   "donation.thanks": "Thank you for your donation!",
+  "donation.successSubtitle": "Your contribution helps make this project a reality.",
 
   // Create Campaign
   "createCampaign.title": "Create Campaign",

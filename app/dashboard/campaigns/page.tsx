@@ -18,6 +18,7 @@ type CampaignItem = {
   description: string | null
   cost: number | null
   status: string | null
+  escrowId: string | null
   milestones?: MilestoneItem[]
   campaignBeneficiaries?: BeneficiaryItem[]
 }
@@ -27,7 +28,7 @@ export default function CampaignsPage() {
   const { user } = useAuth()
   const canCreate = user?.role === "corporation"
   const canDonate = user?.role === "angel_investor"
-  const [donatingCampaign, setDonatingCampaign] = useState<{ id: string; name: string } | null>(null)
+  const [donatingCampaign, setDonatingCampaign] = useState<{ id: string; name: string; escrowId?: string } | null>(null)
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -156,7 +157,11 @@ export default function CampaignsPage() {
                       variant="outline"
                       className="border-primary/50 text-primary hover:bg-primary/10"
                       onClick={() =>
-                        setDonatingCampaign({ id: String(c.campaign_id), name: c.title })
+                        setDonatingCampaign({
+                          id: String(c.campaign_id),
+                          name: c.title,
+                          escrowId: c.escrowId || undefined
+                        })
                       }
                     >
                       <Heart className="mr-2 h-4 w-4" />
@@ -174,6 +179,7 @@ export default function CampaignsPage() {
         <DonationModal
           campaignId={donatingCampaign.id}
           campaignName={donatingCampaign.name}
+          escrowId={donatingCampaign.escrowId}
           onClose={() => setDonatingCampaign(null)}
         />
       )}

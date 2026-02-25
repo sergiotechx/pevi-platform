@@ -9,10 +9,11 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await sendTransaction(signedXdr)
-        console.log(`[SUBMIT-DEBUG] Result:`, JSON.stringify(result))
+        console.log(`[SUBMIT-SUCCESS] Result:`, JSON.stringify(result))
         return NextResponse.json(result)
     } catch (error: any) {
-        console.error(`Error in submit-transaction: ${error.message}`)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error(`[SUBMIT-ERROR] Error in submit-transaction:`, error)
+        const errorMessage = error.response?.data?.message || error.message || "Unknown error during transaction submission"
+        return NextResponse.json({ error: errorMessage, details: error.response?.data }, { status: 500 })
     }
 }

@@ -12,6 +12,7 @@ interface DonationItem {
   date: string
   hash: string | null
   campaign: { title: string }
+  user?: { fullName: string }
 }
 
 type ActivityWithAward = {
@@ -32,34 +33,42 @@ export default function PaymentsPage() {
   useEffect(() => {
     if (!user?.id) return
     const isBeneficiary = user.role === "beneficiary"
+    const isCorporation = user.role === "corporation"
+
     if (isBeneficiary) {
       fetch(`/api/campaign-beneficiaries?user_id=${user.id}&include=full`)
         .then((r) => r.json())
         .then((data: EnrollmentItem[]) => {
           const list: { milestoneName: string; amount: number; currency: string; status: string }[] = []
-          ;(Array.isArray(data) ? data : []).forEach((e) => {
-            (e.activities ?? []).forEach((a) => {
-              if (a.award) {
-                list.push({
-                  milestoneName: a.milestone?.name ?? "",
-                  amount: Number(a.milestone?.total_amount ?? 0),
-                  currency: a.milestone?.currency ?? "USDC",
-                  status: a.award.hash ? "completed" : (a.award.status ?? "pending"),
-                })
-              }
+            ; (Array.isArray(data) ? data : []).forEach((e) => {
+              (e.activities ?? []).forEach((a) => {
+                if (a.award) {
+                  list.push({
+                    milestoneName: a.milestone?.name ?? "",
+                    amount: Number(a.milestone?.total_amount ?? 0),
+                    currency: a.milestone?.currency ?? "USDC",
+                    status: a.award.hash ? "completed" : (a.award.status ?? "pending"),
+                  })
+                }
+              })
             })
-          })
           setRewardItems(list)
         })
         .catch(() => setRewardItems([]))
         .finally(() => setLoading(false))
     } else {
-      fetch(`/api/donations?user_id=${user.id}`)
+      // For corporations: fetch donations received by their campaigns (org_id)
+      // For angel investors: fetch donations they made (user_id)
+      const query = isCorporation && user.orgId
+        ? `org_id=${user.orgId}`
+        : `user_id=${user.id}`
+
+      fetch(`/api/donations?${query}`)
         .then((r) => r.json())
         .then((data: DonationItem[]) => setDonations(Array.isArray(data) ? data : []))
         .finally(() => setLoading(false))
     }
-  }, [user?.id, user?.role])
+  }, [user?.id, user?.role, user?.orgId])
 
   const isBeneficiary = user?.role === "beneficiary"
 
@@ -100,7 +109,9 @@ export default function PaymentsPage() {
                 <div key={d.donation_id} className="flex items-center justify-between rounded-lg border border-base-300/50 bg-base-300/30 p-3">
                   <div>
                     <p className="text-sm font-medium text-base-content">{d.campaign.title}</p>
-                    <p className="text-xs text-base-content/60">{new Date(d.date).toLocaleDateString()}</p>
+                    <p className="text-xs text-base-content/60">
+                      {d.user?.fullName ? `${d.user.fullName} · ` : ""}{new Date(d.date).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-base-content">

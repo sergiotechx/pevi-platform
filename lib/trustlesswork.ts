@@ -110,12 +110,11 @@ export async function fundEscrow(params: {
     escrowId: string
     amount: number
     senderPublicKey: string
-}): Promise<{ contractId?: string; signedXdr?: string }> {
+}): Promise<{ contractId?: string; signedXdr?: string; unsignedTransaction?: string }> {
     const res = await fetch(`${BASE_URL}/escrow/single-release/fund-escrow`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-            escrowType: "single-release",
             contractId: params.escrowId,
             amount: params.amount,
             signer: params.senderPublicKey
@@ -172,6 +171,7 @@ export async function sendTransaction(signedXdr: string): Promise<any> {
         headers,
         body: JSON.stringify({ signedXdr })
     })
+    console.log(`[TW-DEBUG] sendTransaction: sending XDR (length: ${signedXdr?.length})`)
     if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`Trustless Work sendTransaction failed: ${res.statusText} - ${errorText}`)

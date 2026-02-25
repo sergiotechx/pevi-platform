@@ -81,14 +81,16 @@ export default function ProjectDetailsPage({
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [notFoundFlag, setNotFoundFlag] = useState(false)
+  const [donated, setDonated] = useState(false)
 
   useEffect(() => {
     fetch(`/api/campaigns/${id}?include=basic`, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } })
       .then((r) => {
         if (r.status === 404) { setNotFoundFlag(true); return null }
+        if (!r.ok) { console.error(`Campaign fetch failed: ${r.status}`); return null }
         return r.json()
       })
-      .then((data) => { if (data) setCampaign(data) })
+      .then((data) => { if (data && data.campaign_id) setCampaign(data) })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -130,7 +132,7 @@ export default function ProjectDetailsPage({
 
   const userEnrollment =
     isAuthenticated && user
-      ? campaign.campaignBeneficiaries.find(
+      ? (campaign.campaignBeneficiaries || []).find(
         (cb) => cb.user_id === parseInt(user.id, 10)
       )
       : null
@@ -332,6 +334,20 @@ export default function ProjectDetailsPage({
                 </Link>
               </div>
             </>
+          ) : donated ? (
+            <>
+              <h3 className="font-heading text-lg font-bold text-emerald-500">
+                {t("donation.thanks") || "Thank you for your donation!"}
+              </h3>
+              <p className="mt-2 text-sm text-base-content/60">
+                {t("donation.successSubtitle") || "Your contribution helps make this project a reality."}
+              </p>
+              <div className="mt-5">
+                <Link href="/dashboard">
+                  <Button>{t("public.goToDashboard")}</Button>
+                </Link>
+              </div>
+            </>
           ) : (
             <>
               <h3 className="font-heading text-lg font-bold text-base-content">
@@ -355,7 +371,7 @@ export default function ProjectDetailsPage({
                 )}
                 {user?.role === "angel_investor" && (
                   <Button onClick={() => setShowDonation(true)}>
-                    {t("public.joinProject")}
+                    {t("donation.button") || t("public.joinProject")}
                   </Button>
                 )}
                 <Link href="/dashboard">
@@ -375,6 +391,7 @@ export default function ProjectDetailsPage({
           campaignName={campaign.title}
           escrowId={campaign.escrowId || undefined}
           onClose={() => setShowDonation(false)}
+          onSuccess={() => setDonated(true)}
         />
       )}
     </div>

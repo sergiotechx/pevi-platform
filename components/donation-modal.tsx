@@ -14,9 +14,10 @@ interface DonationModalProps {
   campaignName: string
   escrowId?: string
   onClose: () => void
+  onSuccess?: () => void
 }
 
-export function DonationModal({ campaignId, campaignName, escrowId, onClose }: DonationModalProps) {
+export function DonationModal({ campaignId, campaignName, escrowId, onClose, onSuccess }: DonationModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const { user } = useAuth()
   const { t } = useTranslation()
@@ -82,9 +83,12 @@ export function DonationModal({ campaignId, campaignName, escrowId, onClose }: D
       }
 
       setSuccess(true)
+      onSuccess?.()
       setTimeout(handleClose, 2500)
-    } catch (e) {
-      console.error(e)
+    } catch (e: any) {
+      console.error("[DonationModal] Error:", e)
+      const apiError = e?.response?.data?.error || e?.message || "Error desconocido"
+      setError(apiError)
     } finally {
       setLoading(false)
     }

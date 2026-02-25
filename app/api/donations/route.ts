@@ -33,16 +33,24 @@ export async function POST(request: NextRequest) {
 
     if (body.escrow_id && body.sender_public_key) {
       try {
-        const { signedXdr } = await fundEscrow({
+        const fundResult = await fundEscrow({
           escrowId: body.escrow_id,
           amount: parseFloat(String(amount)),
           senderPublicKey: body.sender_public_key,
         })
-        if (signedXdr) {
-          raw_xdr = signedXdr
+        console.log("[DONATION] fundEscrow result:", JSON.stringify(fundResult))
+        const xdr = fundResult.signedXdr || fundResult.unsignedTransaction
+        if (xdr) {
+          raw_xdr = xdr
         }
-      } catch (escrowError) {
-        console.error("Escrow fund failed (donation saved without hash):", escrowError)
+      } catch (escrowError: any) {
+        console.error("[DONATION] Escrow fund failed:", escrowError.message)
+        // Delete the orphan donation since escrow failed
+        await prisma.donation.delete({ where: { donation_id: donation.donation_id } })
+        return NextResponse.json(
+          { error: escrowError.message || "Escrow fund failed" },
+          { status: 400 }
+        )
       }
     }
 
@@ -58,19 +66,30 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/donations
- * Get all donations, optionally filtered by user_id
- * Query params: ?user_id=X
+ * Get all donations, optionally filtered by user_id or org_id
+ * Query params: ?user_id=X or ?org_id=X
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userIdParam = searchParams.get('user_id')
-    const where = userIdParam ? { user_id: parseInt(userIdParam) } : {}
+    const orgIdParam = searchParams.get('org_id')
+
+    const where: any = {}
+    if (userIdParam) {
+      where.user_id = parseInt(userIdParam)
+    }
+    if (orgIdParam) {
+      where.campaign = { org_id: parseInt(orgIdParam) }
+    }
 
     const donations = await prisma.donation.findMany({
-      where,
+      where: Object.keys(where).length > 0 ? where : undefined,
       orderBy: { date: 'desc' },
-      include: { campaign: { select: { title: true } } },
+      include: {
+        campaign: { select: { title: true } },
+        user: { select: { fullName: true } },
+      },
     })
     return NextResponse.json(donations)
   } catch (error) {
