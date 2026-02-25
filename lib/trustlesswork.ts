@@ -165,3 +165,17 @@ export async function getEscrowByEngagementId(engagementId: string): Promise<any
     }
     return res.json()
 }
+
+export async function sendTransaction(signedXdr: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/helper/send-transaction`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ signedXdr })
+    })
+    if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Trustless Work sendTransaction failed: ${res.statusText} - ${errorText}`)
+    }
+    return res.json()
+}
+

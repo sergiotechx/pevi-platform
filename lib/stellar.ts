@@ -93,3 +93,20 @@ export async function signAndSubmitTransaction(xdr: string): Promise<{ hash?: st
     return { error: `Execution error: ${err.message}` }
   }
 }
+export async function signTransactionOnly(xdr: string): Promise<{ signedXdr?: string; error?: string }> {
+  try {
+    const networkPassphrase = STELLAR_NETWORK === "mainnet"
+      ? "Public Global Stellar Network ; September 2015"
+      : "Test SDF Network ; September 2015"
+
+    const signedResult = await signTransaction(xdr, { networkPassphrase })
+
+    if (signedResult.error) {
+      return { error: signedResult.error as string }
+    }
+
+    return { signedXdr: signedResult.signedTxXdr }
+  } catch (err: any) {
+    return { error: `Execution error: ${err.message}` }
+  }
+}

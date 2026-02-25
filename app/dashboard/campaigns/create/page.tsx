@@ -13,7 +13,7 @@ import { Plus, Trash2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import { useAuth } from "@/lib/auth-context"
-import { signAndSubmitTransaction } from "@/lib/stellar"
+import { signTransactionOnly } from "@/lib/stellar"
 
 interface MilestoneRow { title: string; description: string; reward: string }
 
@@ -77,12 +77,29 @@ export default function CreateCampaignPage() {
       // 1.1 Si el backend nos devolvió un XDR para firmar, lo firmamos ahora
       if (campaign.unsignedTransaction) {
         setSubmitting(true) // Keep loading state
-        const result = await signAndSubmitTransaction(campaign.unsignedTransaction)
-        if (result.error) {
-          setError(`Firma requerida: ${result.error === "User declined to sign the transaction" ? "Operación cancelada por el usuario" : result.error}`)
+        const signResult = await signTransactionOnly(campaign.unsignedTransaction)
+        if (signResult.error) {
+          setError(`Firma requerida: ${signResult.error === "User declined to sign the transaction" ? "Operación cancelada por el usuario" : signResult.error}`)
           setSubmitting(false)
           return
         }
+
+        // 1.1.2 Enviar la transacción firmada a través de Trustless Work para asegurar sincronización
+        const submitRes = await fetch("/api/escrow/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signedXdr: signResult.signedXdr })
+        })
+
+        if (!submitRes.ok) {
+          const submitError = await submitRes.json()
+          setError(`Error al enviar contrato: ${submitError.error || "Error desconocido"}`)
+          setSubmitting(false)
+          return
+        }
+
+        const submitData = await submitRes.json()
+        const contractIdDirect = submitData.contractId || (submitData.escrow && (submitData.escrow.id || submitData.escrow.contractId))
 
         // 1.2 Intentar sincronizar el ID del contrato con reintentos (el indexador puede tardar)
         let synced = false
@@ -91,6 +108,10 @@ export default function CreateCampaignPage() {
           const syncRes = await fetch(`/api/campaigns/${campaign.campaign_id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: user?.walletAddress,
+              contractId: contractIdDirect // Pasamos el ID directamente si lo tenemos
+            })
           })
           if (syncRes.ok) {
             synced = true

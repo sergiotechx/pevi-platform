@@ -110,32 +110,65 @@ export async function PATCH(
 ) {
   try {
     const { id: rawId } = await params
+    const { walletAddress, contractId: providedContractId } = await request.json().catch(() => ({ walletAddress: null, contractId: null }))
     const id = validateId(rawId)
     if (!id) {
       return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
     }
 
     const engagementId = `campaign-${id}`
-    console.log(`[SYNC-DEBUG] Syncing campaign ${id} with EngagementID: ${engagementId}`)
-    const escrowData = await getEscrowByEngagementId(engagementId)
-    console.log(`[SYNC-DEBUG] Escrow Data received:`, JSON.stringify(escrowData))
+
+    // If we already have the ID from submission, use it directly!
+    if (providedContractId) {
+      await prisma.campaign.update({
+        where: { campaign_id: id },
+        data: { escrowId: providedContractId }
+      })
+      return NextResponse.json({ success: true, escrowId: providedContractId })
+    }
+
+    // 1. Try primary engagementId
+    let escrowData = await getEscrowByEngagementId(engagementId)
+
+    // 2. Fallback: Try just the ID if campaign-ID fails
+    if (!escrowData) {
+      escrowData = await getEscrowByEngagementId(id.toString())
+    }
+
+    // 3. Ultra Fallback: If we have a walletAddress, search for escrows by signer
+    if (!escrowData && walletAddress) {
+      try {
+        const BASE_URL = process.env.TRUSTLESSWORK_BASE_URL || 'https://dev.api.trustlesswork.com'
+        const API_KEY = process.env.TRUSTLESSWORK_API_KEY
+        const searchRes = await fetch(`${BASE_URL}/escrow?signer=${walletAddress}`, {
+          headers: { "x-api-key": API_KEY! }
+        })
+        if (searchRes.ok) {
+          const list = await searchRes.json()
+          if (Array.isArray(list)) {
+            const match = list.find((e: any) =>
+              e.engagementId === engagementId || e.engagementId === id.toString()
+            )
+            if (match) escrowData = match
+          }
+        }
+      } catch (e) {
+        console.warn(`[SYNC] Search fallback failed:`, e)
+      }
+    }
 
     if (escrowData && (escrowData.contractId || escrowData.escrowId || escrowData.id)) {
       const contractId = escrowData.contractId || escrowData.escrowId || escrowData.id
-      console.log(`[SYNC-DEBUG] Found contractId: ${contractId}. Updating campaign ${id}`)
-      const updated = await prisma.campaign.update({
+      await prisma.campaign.update({
         where: { campaign_id: id },
         data: { escrowId: contractId }
       })
-      console.log(`[SYNC-DEBUG] Campaign ${id} updated successfully with escrowId ${contractId}`)
       return NextResponse.json({ success: true, escrowId: contractId })
     }
 
-    console.log(`[SYNC-DEBUG] No contract found for EngagementID: ${engagementId}`)
     return NextResponse.json({
       error: "Contrato aún no encontrado en la red.",
-      engagementId,
-      details: escrowData // Send what we got from TW
+      engagementId
     }, { status: 404 })
   } catch (error) {
     return handleApiError(error)
