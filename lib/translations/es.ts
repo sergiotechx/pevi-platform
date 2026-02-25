@@ -44,6 +44,7 @@ export const es: Record<string, string> = {
   "status.in_progress": "En Progreso",
   "status.verified": "Verificado",
   "status.disputed": "Disputado",
+  "status.publish": "Publicar Campaña",
 
   // Navigation
   "nav.overview": "Resumen",

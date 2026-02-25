@@ -17,7 +17,6 @@ import type { UserRole } from "@/lib/types"
 const navByRole: Record<UserRole, { titleKey: string; href: string; icon: typeof LayoutDashboard }[]> = {
   corporation: [
     { titleKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard },
-    { titleKey: "nav.createCampaign", href: "/dashboard/campaigns/create", icon: PlusCircle },
     { titleKey: "nav.listCampaigns", href: "/dashboard/campaigns", icon: Megaphone },
     { titleKey: "nav.manageRoles", href: "/dashboard/manage-roles", icon: UserCog },
     { titleKey: "nav.beneficiaries", href: "/dashboard/beneficiaries", icon: Users },

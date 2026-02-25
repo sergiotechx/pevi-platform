@@ -22,7 +22,13 @@ export async function GET(request: NextRequest) {
       include = milestoneIncludes.full
     }
 
+    const campaignIdParam = searchParams.get('campaign_id')
+    const campaignId = campaignIdParam ? parseInt(campaignIdParam) : undefined
+
     const milestones = await prisma.milestone.findMany({
+      where: {
+        campaign_id: campaignId
+      },
       include,
       skip,
       take,
