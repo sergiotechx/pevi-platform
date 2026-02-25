@@ -49,6 +49,7 @@ interface Campaign {
   cost: number
   start_at: string
   status: string
+  escrowId: string | null
   organization: Organization | null
   milestones: Milestone[]
   campaignBeneficiaries: CampaignBeneficiary[]
@@ -102,8 +103,8 @@ export default function ProjectDetailsPage({
   const isAlreadyBeneficiary =
     isAuthenticated && user
       ? campaign.campaignBeneficiaries.some(
-          (cb) => cb.user_id === parseInt(user.id, 10)
-        )
+        (cb) => cb.user_id === parseInt(user.id, 10)
+      )
       : false
 
   const approvedMilestones = campaign.milestones.filter(
@@ -318,6 +319,7 @@ export default function ProjectDetailsPage({
         <DonationModal
           campaignId={campaign.campaign_id.toString()}
           campaignName={campaign.title}
+          escrowId={campaign.escrowId || undefined}
           onClose={() => setShowDonation(false)}
         />
       )}

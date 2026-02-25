@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { apiClient } from "@/lib/axios-client"
+import { signAndSubmitTransaction } from "@/lib/stellar"
 
 interface DonationModalProps {
   campaignId: string | number
@@ -22,6 +23,7 @@ export function DonationModal({ campaignId, campaignName, escrowId, onClose }: D
   const [amount, setAmount] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     dialogRef.current?.showModal()
@@ -34,22 +36,57 @@ export function DonationModal({ campaignId, campaignName, escrowId, onClose }: D
 
   const handleDonate = async () => {
     if (!amount || parseFloat(amount) <= 0 || !user) return
+    if (!user.walletAddress) {
+      setError(t("wallet.notConnected") || "Por favor, conecta tu wallet en tu perfil antes de donar.")
+      return
+    }
+    if (!escrowId) {
+      setError(t("wallet.noEscrow") || "Esta campaña no posee una bóveda (escrow) activa en la red.")
+      return
+    }
+
     setLoading(true)
+    setError("")
     try {
       const numericId = parseInt(String(campaignId).replace(/\D/g, ""))
-      await apiClient.post("/donations", {
+      const res = await apiClient.post("/donations", {
         user_id: parseInt(user.id),
         campaign_id: numericId,
         amount: parseFloat(amount),
         escrow_id: escrowId,
         sender_public_key: user.walletAddress,
       })
-    } catch {
-      // continue to show success regardless
-    } finally {
-      setLoading(false)
+
+      if (res.data?.raw_xdr) {
+        setLoading(false)
+        // Wait for signature
+        const txRes = await signAndSubmitTransaction(res.data.raw_xdr)
+        setLoading(true)
+        if (txRes.error) {
+          console.error("Transaction failed:", txRes.error)
+          setError(txRes.error)
+          setLoading(false)
+          return
+        }
+
+        // Confirm with the API
+        if (txRes.hash) {
+          await apiClient.put(`/donations/${res.data.donation_id}`, {
+            hash: txRes.hash
+          })
+        }
+      } else {
+        setError("No se pudo obtener el contrato de donación de la red.")
+        setLoading(false)
+        return
+      }
+
       setSuccess(true)
       setTimeout(handleClose, 2500)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -78,6 +115,12 @@ export function DonationModal({ campaignId, campaignName, escrowId, onClose }: D
               {t("donation.title")}
             </h3>
             <p className="mb-5 text-sm text-base-content/60">{campaignName}</p>
+
+            {error && (
+              <div className="mb-4 rounded-md bg-error/10 p-3 text-sm text-error">
+                {error}
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium text-base-content">

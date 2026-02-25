@@ -8,13 +8,6 @@ export async function POST(request: NextRequest) {
 
         const { signedXdr } = await releaseEscrow({ escrowId: escrow_id, approverPublicKey: approver_public_key })
 
-        if (award_id && signedXdr) {
-            await prisma.award.update({
-                where: { award_id: parseInt(award_id) },
-                data: { hash: signedXdr },
-            })
-        }
-
         return NextResponse.json({ hash: signedXdr }, { status: 200 })
     } catch (error) {
         console.error("Error releasing escrow:", error)

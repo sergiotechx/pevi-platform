@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { handleApiError, parsePagination } from '@/lib/api-utils'
 import { campaignIncludes } from '@/lib/api-includes'
+import { createCampaignEscrow } from '@/lib/trustlesswork'
 
 /**
  * GET /api/campaigns
@@ -48,10 +49,73 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { wallet_address, ...campaignData } = body
 
-    const campaign = await prisma.campaign.create({
-      data: body,
+    let campaign = await prisma.campaign.create({
+      data: campaignData,
     })
+
+    if (wallet_address) {
+      try {
+        const platformAddress = process.env.PEVI_PLATFORM_WALLET || wallet_address
+        const escrow = await createCampaignEscrow({
+          campaignId: campaign.campaign_id,
+          amount: campaign.cost || 100,
+          currency: "USDC",
+          approver: wallet_address, // El usuario que crea la campaña es quien firma (signer)
+          receiver: wallet_address,
+          platformAddress: platformAddress, // La plataforma queda como admin/dispute resolver
+          title: campaign.title,
+          description: campaign.description || "Campaign Escrow",
+        })
+
+        if (escrow.contractId) {
+          campaign = await prisma.campaign.update({
+            where: { campaign_id: campaign.campaign_id },
+            data: { escrowId: escrow.contractId },
+          })
+        } else if (escrow.unsignedTransaction) {
+          // Si no tenemos contractId pero sí XDR, lo devolvemos al frontend para firmar
+          return NextResponse.json({
+            ...campaign,
+            unsignedTransaction: escrow.unsignedTransaction
+          }, { status: 201 })
+        } else {
+          await prisma.campaign.delete({ where: { campaign_id: campaign.campaign_id } })
+          return NextResponse.json({ error: "No se pudo preparar el contrato de Trustless Work." }, { status: 400 })
+        }
+      } catch (escrowErr: any) {
+        console.error("Failed to create campaign escrow:", escrowErr)
+        await prisma.campaign.delete({ where: { campaign_id: campaign.campaign_id } })
+        const errMsg = escrowErr?.message || escrowErr.toString()
+        return NextResponse.json({ error: `Fallo al crear contrato en la red: ${errMsg}` }, { status: 400 })
+      }
+    }
+
+    // Notify Angel Investors
+    try {
+      const investors = await prisma.user.findMany({
+        where: { role: "angel_investor" }
+      })
+
+      const notifications = investors.map(inv => ({
+        user_id: inv.user_id,
+        title: "notifications.newCampaignTitle",
+        message: "notifications.newCampaignMessage",
+        metadata: { campaign: campaign.title },
+        type: "campaign",
+        actionUrl: `/projects/${campaign.campaign_id}`,
+        actionLabel: "notifications.viewCampaign"
+      }))
+
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({
+          data: notifications
+        })
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify angel investors:", notifyErr)
+    }
 
     return NextResponse.json(campaign, { status: 201 })
   } catch (error) {

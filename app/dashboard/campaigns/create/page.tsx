@@ -13,6 +13,7 @@ import { Plus, Trash2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import { useAuth } from "@/lib/auth-context"
+import { signAndSubmitTransaction } from "@/lib/stellar"
 
 interface MilestoneRow { title: string; description: string; reward: string }
 
@@ -45,6 +46,7 @@ export default function CreateCampaignPage() {
     if (!name || !description || !budget || !startDate || !endDate) { setError(t("createCampaign.errorRequired")); return }
     if (milestones.some((m) => !m.title)) { setError(t("createCampaign.errorMilestoneTitle")); return }
     if (!user?.orgId) { setError("Organization not found. Your account must be linked to an organization to create campaigns."); return }
+    if (!user?.walletAddress) { setError("Por favor, conecta tu wallet de Stellar desde tu perfil para poder recibir donaciones en blockchain."); return }
 
     setSubmitting(true)
     try {
@@ -59,6 +61,7 @@ export default function CreateCampaignPage() {
           cost: parseFloat(budget),
           start_at: new Date(startDate).toISOString(),
           status: "draft",
+          wallet_address: user?.walletAddress, // Needed for Campaign Escrow
         }),
       })
 
@@ -70,6 +73,36 @@ export default function CreateCampaignPage() {
       }
 
       const campaign = await campaignRes.json()
+
+      // 1.1 Si el backend nos devolvió un XDR para firmar, lo firmamos ahora
+      if (campaign.unsignedTransaction) {
+        setSubmitting(true) // Keep loading state
+        const result = await signAndSubmitTransaction(campaign.unsignedTransaction)
+        if (result.error) {
+          setError(`Firma requerida: ${result.error === "User declined to sign the transaction" ? "Operación cancelada por el usuario" : result.error}`)
+          setSubmitting(false)
+          return
+        }
+
+        // 1.2 Intentar sincronizar el ID del contrato con reintentos (el indexador puede tardar)
+        let synced = false
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 3000)) // 3 segundos entre intentos
+          const syncRes = await fetch(`/api/campaigns/${campaign.campaign_id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+          })
+          if (syncRes.ok) {
+            synced = true
+            break
+          }
+          console.log(`Intento de sincronización ${attempt} fallido, reintentando...`)
+        }
+
+        if (!synced) {
+          console.warn("No se pudo sincronizar el Escrow ID automáticamente. Se intentará de nuevo al ver la campaña.")
+        }
+      }
 
       // 2. Create milestones for the campaign
       for (const m of milestones) {

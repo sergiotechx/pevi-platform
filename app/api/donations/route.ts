@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const donation = await prisma.donation.create({
+    let donation = await prisma.donation.create({
       data: {
         user_id: parseInt(String(user_id)),
         campaign_id: parseInt(String(campaign_id)),
@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
         date: new Date(),
       },
     })
+
+    let raw_xdr: string | undefined
 
     if (body.escrow_id && body.sender_public_key) {
       try {
@@ -37,15 +39,15 @@ export async function POST(request: NextRequest) {
           senderPublicKey: body.sender_public_key,
         })
         if (signedXdr) {
-          await prisma.donation.update({
-            where: { donation_id: donation.donation_id },
-            data: { hash: signedXdr },
-          })
+          raw_xdr = signedXdr
         }
-        return NextResponse.json({ ...donation, hash: signedXdr }, { status: 201 })
       } catch (escrowError) {
         console.error("Escrow fund failed (donation saved without hash):", escrowError)
       }
+    }
+
+    if (raw_xdr) {
+      return NextResponse.json({ ...donation, raw_xdr }, { status: 201 })
     }
 
     return NextResponse.json(donation, { status: 201 })

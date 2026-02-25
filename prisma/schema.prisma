@@ -41,6 +41,7 @@ model Campaign {
   cost                  Float?
   start_at              String?
   status                String?
+  escrowId              String?
   organization          Organization          @relation(fields: [org_id], references: [org_id])
   campaignBeneficiaries CampaignBeneficiary[]
   campaignStaff         CampaignStaff[]

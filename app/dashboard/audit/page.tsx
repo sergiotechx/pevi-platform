@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
+import { signAndSubmitTransaction } from "@/lib/stellar"
 
 interface ActivityRow {
   activity_id: number
@@ -20,6 +21,7 @@ interface ActivityRow {
   milestone: {
     milestone_id: number
     name: string | null
+    escrowId: string | null
     campaign: {
       campaign_id: number
       title: string
@@ -90,14 +92,52 @@ export default function AuditPage() {
   const handleSave = async (activityId: number) => {
     setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: true, saved: false } }))
     const vs = form[activityId].verification_status
+    let finalHash: string | undefined
+
+    if (vs === "approved") {
+      const a = activities.find(x => x.activity_id === activityId)
+      if (a?.milestone?.escrowId && user?.walletAddress) {
+        try {
+          const res = await fetch("/api/escrow/release", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              escrow_id: a.milestone.escrowId,
+              approver_public_key: user.walletAddress
+            })
+          })
+          const data = await res.json()
+          if (data.hash) {
+            const txRes = await signAndSubmitTransaction(data.hash)
+            if (txRes.error) {
+              console.error("Signature failed:", txRes.error)
+              setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+              return
+            }
+            finalHash = txRes.hash
+          }
+        } catch (err) {
+          console.error("Failed to release escrow:", err)
+          setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+          return
+        }
+      }
+    }
+
     const body: Record<string, string> = {
       verification_status: vs,
       verification_note: form[activityId].verification_note,
       approver_public_key: user?.walletAddress || "",
     }
+
+    if (finalHash) {
+      body.final_tx_hash = finalHash
+    }
+
     if (vs === "review" || vs === "rejected") {
       body.activity_status = "review"
     }
+
     await fetch(`/api/activities/${activityId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

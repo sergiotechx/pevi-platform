@@ -3,6 +3,7 @@ import {
   getAddress,
   setAllowed,
   signMessage,
+  signTransaction,
 } from "@stellar/freighter-api"
 import { StrKey } from "@stellar/stellar-sdk"
 
@@ -48,5 +49,47 @@ export function isValidStellarAddress(address: string): boolean {
     return StrKey.isValidEd25519PublicKey(address)
   } catch {
     return false
+  }
+}
+
+export async function signAndSubmitTransaction(xdr: string): Promise<{ hash?: string; error?: string }> {
+  try {
+    const networkPassphrase = STELLAR_NETWORK === "mainnet"
+      ? "Public Global Stellar Network ; September 2015"
+      : "Test SDF Network ; September 2015"
+
+    const signedResult = await signTransaction(xdr, { networkPassphrase })
+
+    if (signedResult.error) {
+      return { error: signedResult.error as string }
+    }
+
+    const horizonUrl = STELLAR_NETWORK === "mainnet"
+      ? "https://horizon.stellar.org"
+      : "https://horizon-testnet.stellar.org"
+
+    const body = new URLSearchParams()
+    body.append("tx", signedResult.signedTxXdr)
+
+    const res = await fetch(`${horizonUrl}/transactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    })
+
+    const data = await res.json()
+    if (res.ok && data.hash) {
+      return { hash: data.hash }
+    }
+
+    // Mejorar el reporte de errores de Stellar Horizon
+    const resultCodes = data.extras?.result_codes
+    const errorDetail = resultCodes
+      ? `Codes: ${resultCodes.transaction}${resultCodes.operations ? ` [${resultCodes.operations.join(",")}]` : ""}`
+      : data.detail || data.title
+
+    return { error: `Network error: ${errorDetail}` }
+  } catch (err: any) {
+    return { error: `Execution error: ${err.message}` }
   }
 }

@@ -72,7 +72,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { approver_public_key, ...updateData } = body
+    const { approver_public_key, final_tx_hash, ...updateData } = body
 
     const activity = await prisma.activity.update({
       where: { activity_id: id },
@@ -84,22 +84,136 @@ export async function PUT(
     })
 
     if ((updateData.verification_status === "approved" || updateData.activity_status === "approved") && activity.award?.award_id) {
-      if (activity.milestone?.escrowId && approver_public_key) {
-        try {
-          const { releaseEscrow } = await import('@/lib/trustlesswork')
-          const { signedXdr } = await releaseEscrow({
-            escrowId: activity.milestone.escrowId,
-            approverPublicKey: approver_public_key,
-          })
-          if (signedXdr) {
-            await prisma.award.update({
-              where: { award_id: activity.award.award_id },
-              data: { hash: signedXdr },
+      if (final_tx_hash) {
+        await prisma.award.update({
+          where: { award_id: activity.award.award_id },
+          data: { hash: final_tx_hash },
+        })
+      }
+    }
+
+    if (updateData.verification_status === "approved" || updateData.activity_status === "approved") {
+      try {
+        const fullActivity = await prisma.activity.findUnique({
+          where: { activity_id: id },
+          include: {
+            milestone: {
+              include: { campaign: { include: { organization: { include: { organizationStaff: true } } } } }
+            },
+            campaignBeneficiary: { include: { user: true } }
+          }
+        })
+
+        if (fullActivity?.milestone && fullActivity?.campaignBeneficiary) {
+          const milestoneName = fullActivity.milestone.name || `Milestone ${fullActivity.milestone.milestone_id}`
+          const campaignTitle = fullActivity.milestone.campaign.title
+          const beneficiaryUser = fullActivity.campaignBeneficiary.user
+          const organizationStaff = fullActivity.milestone.campaign.organization?.organizationStaff || []
+          const notifications = []
+
+          // Notify Beneficiary
+          if (beneficiaryUser) {
+            notifications.push({
+              user_id: beneficiaryUser.user_id,
+              title: "notifications.milestoneApprovedTitle",
+              message: "notifications.milestoneApprovedMessage",
+              metadata: { milestone: milestoneName, campaign: campaignTitle },
+              type: "milestone",
+              actionUrl: "/dashboard/progress",
+              actionLabel: "notifications.viewProgress"
             })
           }
-        } catch (escrowError) {
-          console.error("Failed to release escrow:", escrowError)
+
+          // Notify Corporation
+          for (const staff of organizationStaff) {
+            if (staff.user_id) {
+              notifications.push({
+                user_id: staff.user_id,
+                title: "notifications.corpMilestoneApprovedTitle",
+                message: "notifications.corpMilestoneApprovedMessage",
+                metadata: { milestone: milestoneName, beneficiary: beneficiaryUser?.fullName || "Un beneficiario" },
+                type: "milestone",
+                actionUrl: "/dashboard/explore", // Generic, could be /dashboard/campaigns
+                actionLabel: "notifications.viewCampaign"
+              })
+            }
+          }
+
+          if (notifications.length > 0) {
+            await prisma.notification.createMany({ data: notifications as any })
+          }
         }
+      } catch (notifyErr) {
+        console.error("Failed to notify milestone approval:", notifyErr)
+      }
+    } else if (updateData.evidence_status === "submitted") {
+      try {
+        const fullActivity = await prisma.activity.findUnique({
+          where: { activity_id: id },
+          include: {
+            milestone: {
+              include: { campaign: { include: { organization: { include: { organizationStaff: true } } } } }
+            },
+            campaignBeneficiary: { include: { user: true } }
+          }
+        })
+
+        if (fullActivity?.milestone && fullActivity?.campaignBeneficiary) {
+          const milestoneName = fullActivity.milestone.name || `Milestone ${fullActivity.milestone.milestone_id}`
+          const beneficiaryUser = fullActivity.campaignBeneficiary.user
+          const organizationStaff = fullActivity.milestone.campaign.organization?.organizationStaff || []
+          const notifications = []
+
+          // Notify Corporation
+          for (const staff of organizationStaff) {
+            if (staff.user_id) {
+              notifications.push({
+                user_id: staff.user_id,
+                title: "notifications.evidenceSubmittedTitle",
+                message: "notifications.evidenceSubmittedMessage",
+                metadata: { milestone: milestoneName, beneficiary: beneficiaryUser?.fullName || "Un beneficiario" },
+                type: "evidence",
+                actionUrl: "/dashboard/evaluations",
+                actionLabel: "notifications.viewEvaluations"
+              })
+            }
+          }
+
+          if (notifications.length > 0) {
+            await prisma.notification.createMany({ data: notifications as any })
+          }
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify evidence submitted:", notifyErr)
+      }
+    } else if (updateData.evidence_status === "rejected" || updateData.verification_status === "rejected") {
+      try {
+        const fullActivity = await prisma.activity.findUnique({
+          where: { activity_id: id },
+          include: {
+            milestone: true,
+            campaignBeneficiary: { include: { user: true } }
+          }
+        })
+
+        if (fullActivity?.milestone && fullActivity?.campaignBeneficiary?.user) {
+          const milestoneName = fullActivity.milestone.name || `Milestone ${fullActivity.milestone.milestone_id}`
+          const beneficiaryUser = fullActivity.campaignBeneficiary.user
+
+          await prisma.notification.create({
+            data: {
+              user_id: beneficiaryUser.user_id,
+              title: "notifications.evidenceRejectedTitle",
+              message: "notifications.evidenceRejectedMessage",
+              metadata: { milestone: milestoneName },
+              type: "evidence",
+              actionUrl: "/dashboard/progress",
+              actionLabel: "notifications.viewProgress"
+            } as any
+          })
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify evidence rejection:", notifyErr)
       }
     }
 

@@ -33,3 +33,6 @@ err2.html
 
 # Documentation
 *.md
+
+cleaned_tools.json
+*.txt
