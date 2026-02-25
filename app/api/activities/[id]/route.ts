@@ -162,13 +162,37 @@ export async function PUT(
           const milestoneName = fullActivity.milestone.name || `Milestone ${fullActivity.milestone.milestone_id}`
           const beneficiaryUser = fullActivity.campaignBeneficiary.user
           const organizationStaff = fullActivity.milestone.campaign.organization?.organizationStaff || []
+
+          // Also fetch campaign-assigned evaluators
+          const campaignStaff = await prisma.campaignStaff.findMany({
+            where: { campaign_id: fullActivity.milestone.campaign_id, role: 'evaluator' },
+            include: { organizationStaff: { select: { user_id: true } } }
+          })
+
           const notifications = []
 
-          // Notify Corporation
+          // Notify Corporation Staff
           for (const staff of organizationStaff) {
             if (staff.user_id) {
               notifications.push({
                 user_id: staff.user_id,
+                title: "notifications.evidenceSubmittedTitle",
+                message: "notifications.evidenceSubmittedMessage",
+                metadata: { milestone: milestoneName, beneficiary: beneficiaryUser?.fullName || "Un beneficiario" },
+                type: "evidence",
+                actionUrl: "/dashboard/evaluations",
+                actionLabel: "notifications.viewEvaluations"
+              })
+            }
+          }
+
+          // Notify Campaign Evaluators
+          const notifiedUserIds = new Set(notifications.map(n => n.user_id))
+          for (const staff of campaignStaff) {
+            const userId = staff.organizationStaff.user_id
+            if (userId && !notifiedUserIds.has(userId)) {
+              notifications.push({
+                user_id: userId,
                 title: "notifications.evidenceSubmittedTitle",
                 message: "notifications.evidenceSubmittedMessage",
                 metadata: { milestone: milestoneName, beneficiary: beneficiaryUser?.fullName || "Un beneficiario" },

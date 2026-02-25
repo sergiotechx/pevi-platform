@@ -15,9 +15,18 @@ export async function GET(request: NextRequest) {
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
     const roleParam = searchParams.get('role')
+    const orgIdParam = searchParams.get('orgId')
 
-    // Optional filter by role
-    const where = roleParam ? { role: roleParam } : undefined
+    // Filters
+    const where: any = {}
+    if (roleParam) where.role = roleParam
+    if (orgIdParam) {
+      where.organizationStaff = {
+        some: {
+          org_id: parseInt(orgIdParam, 10)
+        }
+      }
+    }
 
     // Determine include configuration
     let include = undefined
@@ -50,6 +59,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = { ...body }
+
+    // Enforce unique verifier system: Do not allow creating new verifiers
+    if (data.role === 'verifier') {
+      return NextResponse.json(
+        { error: 'Cannot create new verifier accounts. The platform uses a unique centralized verifier.' },
+        { status: 400 }
+      )
+    }
 
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10)

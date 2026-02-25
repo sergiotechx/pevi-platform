@@ -209,6 +209,7 @@ export const es: Record<string, string> = {
   "review.observation": "Observación del beneficiario",
   "review.evidenceUrl": "URL de la actividad",
   "review.status": "Estado del evaluador",
+  "review.statusSubmitted": "Enviado",
   "review.statusPending": "Pendiente",
   "review.statusReview": "En revisión",
   "review.statusApproved": "Aprobado",
@@ -329,6 +330,24 @@ export const es: Record<string, string> = {
   "profile.nameUpdated": "¡Nombre actualizado exitosamente!",
   "profile.passwordMismatch": "Las contraseñas no coinciden",
   "profile.updatePassword": "Actualizar Contraseña",
+
+  // Profile - Organization
+  "profile.org.title": "Organización",
+  "profile.org.nameLabel": "Nombre de la Organización",
+  "profile.org.namePlaceholder": "Ej: Fundación Esperanza",
+  "profile.org.inviteCodeTitle": "Código de Invitación para Evaluadores",
+  "profile.org.inviteCodeDesc": "Comparte este código con los evaluadores para que se unan a tu organización.",
+  "profile.org.memberOf": "Miembro de",
+  "profile.org.notInOrg": "No perteneces a ninguna organización. Ingresa el código proporcionado por tu corporación para unirte.",
+  "profile.org.joinPlaceholder": "Código (ej: PEV-XYZ)",
+  "profile.org.joinButton": "Unirse",
+  "profile.org.codeCopied": "Código copiado",
+  "profile.org.createdSuccess": "Organización creada exitosamente",
+  "profile.org.updatedSuccess": "Organización actualizada",
+  "profile.org.joinedSuccess": "Te has unido a {{name}}",
+  "profile.org.createError": "Error al crear organización",
+  "profile.org.updateError": "Error al actualizar",
+  "profile.org.joinError": "Error al unirse",
 
   // Progress
   "progress.title": "Mi Progreso",

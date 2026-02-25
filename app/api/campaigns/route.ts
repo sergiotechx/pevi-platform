@@ -75,6 +75,20 @@ export async function POST(request: NextRequest) {
             data: { escrowId: escrow.contractId },
           })
         } else if (escrow.unsignedTransaction) {
+          // Auto-assign org staff as evaluators before returning
+          const staff = await prisma.organizationStaff.findMany({
+            where: { org_id: campaign.org_id }
+          })
+          if (staff.length > 0) {
+            await prisma.campaignStaff.createMany({
+              data: staff.map(s => ({
+                campaign_id: campaign.campaign_id,
+                orgStaff_id: s.orgStaff_id,
+                role: 'evaluator'
+              }))
+            })
+          }
+
           // Si no tenemos contractId pero sí XDR, lo devolvemos al frontend para firmar
           return NextResponse.json({
             ...campaign,
@@ -90,6 +104,21 @@ export async function POST(request: NextRequest) {
         const errMsg = escrowErr?.message || escrowErr.toString()
         return NextResponse.json({ error: `Fallo al crear contrato en la red: ${errMsg}` }, { status: 400 })
       }
+    }
+
+    // Also auto-assign if no wallet was needed (fallback)
+    const staff = await prisma.organizationStaff.findMany({
+      where: { org_id: campaign.org_id }
+    })
+    if (staff.length > 0) {
+      await prisma.campaignStaff.createMany({
+        data: staff.map(s => ({
+          campaign_id: campaign.campaign_id,
+          orgStaff_id: s.orgStaff_id,
+          role: 'evaluator'
+        })),
+        skipDuplicates: true
+      })
     }
 
     return NextResponse.json(campaign, { status: 201 })

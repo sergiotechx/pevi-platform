@@ -174,6 +174,7 @@ export default function ReviewPage() {
                                   onChange={(e) => setForm((prev) => ({ ...prev, [a.activity_id]: { ...prev[a.activity_id], evidence_status: e.target.value, saved: false } }))}
                                   className="select select-bordered select-sm w-full bg-base-100/50"
                                 >
+                                  <option value="submitted">{t("review.statusSubmitted")}</option>
                                   <option value="pending">{t("review.statusPending")}</option>
                                   <option value="review">{t("review.statusReview")}</option>
                                   <option value="approved">{t("review.statusApproved")}</option>

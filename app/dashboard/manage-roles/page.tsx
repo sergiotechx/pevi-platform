@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from "@/lib/i18n-context"
+import { useAuth } from "@/lib/auth-context"
 
 type StaffUser = {
   user_id: number
@@ -12,14 +13,21 @@ type StaffUser = {
 
 export default function ManageRolesPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [evaluators, setEvaluators] = useState<StaffUser[]>([])
   const [verifiers, setVerifiers] = useState<StaffUser[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!user?.orgId) {
+      setLoading(false)
+      return
+    }
+
+    const orgId = user.orgId
     Promise.all([
-      fetch(`/api/users?role=evaluator`).then((r) => r.json()),
-      fetch(`/api/users?role=verifier`).then((r) => r.json()),
+      fetch(`/api/users?role=evaluator&orgId=${orgId}`).then((r) => r.json()),
+      fetch(`/api/users?role=verifier&orgId=${orgId}`).then((r) => r.json()),
     ])
       .then(([evalData, verData]) => {
         setEvaluators(Array.isArray(evalData) ? evalData : [])
@@ -27,7 +35,7 @@ export default function ManageRolesPage() {
       })
       .catch(() => { setEvaluators([]); setVerifiers([]) })
       .finally(() => setLoading(false))
-  }, [])
+  }, [user?.orgId])
 
   if (loading) {
     return <div className="flex flex-col gap-6"><p className="text-sm text-base-content/60">{t("common.loading")}</p></div>

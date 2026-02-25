@@ -30,13 +30,23 @@ export async function GET(
       include = organizationIncludes.full
     }
 
-    const organization = await prisma.organization.findUnique({
+    let organization = await prisma.organization.findUnique({
       where: { org_id: id },
       include,
     })
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
+    // Lazy generate invite code if missing
+    if (!organization.invite_code) {
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      organization = await prisma.organization.update({
+        where: { org_id: id },
+        data: { invite_code: inviteCode },
+        include,
+      })
     }
 
     return NextResponse.json(organization)

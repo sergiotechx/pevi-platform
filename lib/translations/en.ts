@@ -209,6 +209,7 @@ export const en: Record<string, string> = {
   "review.observation": "Beneficiary observation",
   "review.evidenceUrl": "Activity URL",
   "review.status": "Evaluator status",
+  "review.statusSubmitted": "Submitted",
   "review.statusPending": "Pending",
   "review.statusReview": "In review",
   "review.statusApproved": "Approved",
@@ -329,6 +330,24 @@ export const en: Record<string, string> = {
   "profile.nameUpdated": "Name updated successfully!",
   "profile.passwordMismatch": "Passwords do not match",
   "profile.updatePassword": "Update Password",
+
+  // Profile - Organization
+  "profile.org.title": "Organization",
+  "profile.org.nameLabel": "Organization Name",
+  "profile.org.namePlaceholder": "e.g. Hope Foundation",
+  "profile.org.inviteCodeTitle": "Invitation Code for Evaluators",
+  "profile.org.inviteCodeDesc": "Share this code with evaluators so they can join your organization.",
+  "profile.org.memberOf": "Member of",
+  "profile.org.notInOrg": "You do not belong to any organization. Enter the code provided by your corporation to join.",
+  "profile.org.joinPlaceholder": "Code (e.g. PEV-XYZ)",
+  "profile.org.joinButton": "Join",
+  "profile.org.codeCopied": "Code copied",
+  "profile.org.createdSuccess": "Organization created successfully",
+  "profile.org.updatedSuccess": "Organization updated",
+  "profile.org.joinedSuccess": "You have joined {{name}}",
+  "profile.org.createError": "Error creating organization",
+  "profile.org.updateError": "Error updating organization",
+  "profile.org.joinError": "Error joining organization",
 
   // Progress
   "progress.title": "My Progress",

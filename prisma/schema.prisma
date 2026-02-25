@@ -11,6 +11,7 @@ model Organization {
   name              String?
   type              String?
   country           Int?
+  invite_code       String?             @unique
   campaigns         Campaign[]
   organizationStaff OrganizationStaff[]
 
@@ -159,10 +160,10 @@ model Notification {
   message         String
   type            String
   read            Boolean  @default(false)
-  metadata        Json?
   createdAt       DateTime @default(now())
   actionUrl       String?
   actionLabel     String?
+  metadata        Json?
   user            User     @relation(fields: [user_id], references: [user_id])
 
   @@index([user_id])

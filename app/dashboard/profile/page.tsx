@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { WalletConnect } from "@/components/wallet-connect"
 import { useTranslation } from "@/lib/i18n-context"
+import { OrganizationCard } from "@/components/organization-card"
 
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
@@ -71,7 +72,10 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div><h1 className="font-heading text-2xl font-bold tracking-tight">{t("profile.title")}</h1><p className="text-sm text-base-content/60">{t("profile.subtitle")}</p></div>
+      <div>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">{t("profile.title")}</h1>
+        <p className="text-sm text-base-content/60">{t("profile.subtitle")}</p>
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-6">
           {/* Account Info - Top Left */}
@@ -130,6 +134,9 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Organization - Middle Left */}
+          <OrganizationCard />
 
           {/* Security / Password - Bottom Left */}
           <Card className="border-base-300/50">

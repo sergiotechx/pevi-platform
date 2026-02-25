@@ -34,8 +34,7 @@ export async function GET(request: NextRequest) {
     // 2. Actividades pendientes de revisión
     prisma.activity.findMany({
       where: {
-        activity_status: { in: ["submitted", "draft"] },
-        evidence_status: { in: ["pending", "review"] },
+        evidence_status: { in: ["submitted", "pending", "review"] },
         milestone: {
           campaign: {
             campaignStaff: evaluatorFilter,

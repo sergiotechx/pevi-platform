@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
 
   const activities = await prisma.activity.findMany({
     where: {
-      activity_status: { in: ["submitted", "draft"] },
-      evidence_status: "pending",
+      evidence_status: { in: ["submitted", "pending", "review"] },
       milestone: {
         campaign: {
           campaignStaff: {
