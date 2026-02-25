@@ -77,11 +77,12 @@ export function AssignmentModal({ beneficiaryId, beneficiaryName, onClose }: Ass
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         user_id: beneficiaryId,
-                        title: t("progress.invitation"),
-                        message: t("progress.invitationMessage", { campaign: campaigns.find(c => c.campaign_id === campaignId)?.title || t("progress.newCampaign") }),
+                        title: "progress.invitation",
+                        message: "progress.invitationMessage",
+                        metadata: { campaign: campaigns.find(c => c.campaign_id === campaignId)?.title || "progress.newCampaign" },
                         type: "campaign",
                         actionUrl: "/dashboard/progress",
-                        actionLabel: t("progress.viewInvitation")
+                        actionLabel: "progress.viewInvitation"
                     }),
                 })
             } catch (notifyErr) {

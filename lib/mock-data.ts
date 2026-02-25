@@ -65,6 +65,7 @@ export interface Notification {
   message: string
   type: "milestone" | "campaign" | "evaluation" | "verification" | "system" | "wallet"
   read: boolean
+  metadata?: Record<string, any> | null
   createdAt: string
   actionUrl?: string
   actionLabel?: string

@@ -14,9 +14,12 @@ export async function GET(request: NextRequest) {
     const { skip, take } = parsePagination(searchParams)
     const includeParam = searchParams.get('include')
     const userIdParam = searchParams.get('user_id')
+    const orgIdParam = searchParams.get('org_id')
 
-    // Optional filter by user
-    const where = userIdParam ? { user_id: parseInt(userIdParam, 10) } : undefined
+    // Optional filters
+    const where: any = {}
+    if (userIdParam) where.user_id = parseInt(userIdParam, 10)
+    if (orgIdParam) where.org_id = parseInt(orgIdParam, 10)
 
     // Determine include configuration
     let include = undefined

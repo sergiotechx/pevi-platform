@@ -53,14 +53,22 @@ function NotificationItem({
   onDismiss: () => void
   onAction: () => void
 }) {
+  const { t } = useTranslation()
   const Icon = typeIcons[notification.type] || Bell
   const color = typeColors[notification.type] || "text-base-content/60"
 
+  // Attempt to translate, but if the translation returns the key itself (for legacy DB rows), display as is.
+  // The 't' hook returns the key if it doesn't exist, which is a perfect fallback.
+  const displayTitle = t(notification.title, notification.metadata || {})
+  const displayMessage = t(notification.message, notification.metadata || {})
+  const displayActionLabel = notification.actionLabel
+    ? t(notification.actionLabel, notification.metadata || {})
+    : undefined
+
   return (
     <div
-      className={`group relative flex gap-3 border-b border-base-300/50 p-4 transition-colors ${
-        notification.read ? "bg-transparent opacity-70" : "bg-primary/5"
-      }`}
+      className={`group relative flex gap-3 border-b border-base-300/50 p-4 transition-colors ${notification.read ? "bg-transparent opacity-70" : "bg-primary/5"
+        }`}
     >
       {!notification.read && (
         <span className="absolute left-1.5 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary" />
@@ -71,7 +79,7 @@ function NotificationItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-sm leading-tight ${notification.read ? "text-base-content/80" : "font-semibold text-base-content"}`}>
-            {notification.title}
+            {displayTitle}
           </p>
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
             {!notification.read && (
@@ -93,16 +101,16 @@ function NotificationItem({
           </div>
         </div>
         <p className="mt-0.5 text-xs leading-relaxed text-base-content/60 line-clamp-2">
-          {notification.message}
+          {displayMessage}
         </p>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-[11px] text-base-content/50">{formatRelativeTime(notification.createdAt)}</span>
-          {notification.actionUrl && notification.actionLabel && (
+          {notification.actionUrl && displayActionLabel && (
             <button
               onClick={(e) => { e.stopPropagation(); if (!notification.read) onRead(); onAction() }}
               className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
             >
-              {notification.actionLabel}
+              {displayActionLabel}
               <ExternalLink className="h-3 w-3" />
             </button>
           )}

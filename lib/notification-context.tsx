@@ -46,6 +46,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       message: n.message,
       type: n.type,
       read: n.read,
+      metadata: n.metadata,
       createdAt: n.createdAt,
       actionUrl: n.actionUrl,
       actionLabel: n.actionLabel

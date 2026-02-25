@@ -43,18 +43,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
+        console.log(`[API] POST /api/notifications - Payload:`, body)
 
         // Validate required fields
-        if (!body.user_id || !body.title || !body.message || !body.type) {
+        if (body.user_id === undefined || !body.title || !body.message || !body.type) {
+            console.error('[API] POST /api/notifications Error: Missing required fields', body)
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
         const notification = await prisma.notification.create({
             data: {
-                user_id: parseInt(body.user_id, 10),
+                user_id: typeof body.user_id === 'number' ? body.user_id : parseInt(String(body.user_id), 10),
                 title: body.title,
                 message: body.message,
                 type: body.type,
+                metadata: body.metadata ? body.metadata : undefined,
                 actionUrl: body.actionUrl || null,
                 actionLabel: body.actionLabel || null,
             },

@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
+import useSWR from "swr"
 import { Megaphone, Users, Target, PlusCircle, Bell } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,16 +24,13 @@ export function CorporationOverview() {
   const { unreadCount } = useNotifications()
   const { t } = useTranslation()
   const { user } = useAuth()
-  const [campaigns, setCampaigns] = useState<CampaignItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: campaignsRaw, isLoading: loading } = useSWR<CampaignItem[]>(
+    "/api/campaigns?include=full",
+    (url: string) => fetch(url, { cache: "no-store" }).then((r) => r.json()),
+    { refreshInterval: 5000, revalidateOnFocus: true }
+  )
 
-  useEffect(() => {
-    fetch(`/api/campaigns?include=full`)
-      .then((r) => r.json())
-      .then((data: CampaignItem[]) => setCampaigns(Array.isArray(data) ? data : []))
-      .catch(() => setCampaigns([]))
-      .finally(() => setLoading(false))
-  }, [])
+  const campaigns = Array.isArray(campaignsRaw) ? campaignsRaw : []
 
   const activeCampaigns = campaigns.filter((c) => c.status === "active")
   const totalBeneficiaries = new Set(campaigns.flatMap((c) => (c.campaignBeneficiaries ?? []).map((cb) => cb.campaignBeneficiary_id))).size

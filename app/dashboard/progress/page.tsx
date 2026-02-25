@@ -13,7 +13,7 @@ type ActivityItem = { activity_id: number; milestone_id: number; evidence_status
 type EnrollmentItem = {
   campaignBeneficiary_id: number
   status: string | null
-  campaign: { campaign_id: number; title: string; status: string | null; milestones?: MilestoneItem[] }
+  campaign: { campaign_id: number; org_id: number; title: string; status: string | null; milestones?: MilestoneItem[] }
   activities?: ActivityItem[]
 }
 
@@ -43,6 +43,38 @@ export default function ProgressPage() {
     fetchEnrollments()
   }, [user?.id])
 
+  const notifyCorporation = async (id: number, accepted: boolean) => {
+    try {
+      const enrollment = enrollments.find(e => e.campaignBeneficiary_id === id)
+      if (!enrollment || !enrollment.campaign?.org_id) return
+
+      // Find organization staff for this org
+      const staffRes = await fetch(`/api/organization-staff?org_id=${enrollment.campaign.org_id}`)
+      if (!staffRes.ok) return
+      const staffMembers = await staffRes.json()
+
+      if (Array.isArray(staffMembers)) {
+        for (const staff of staffMembers) {
+          if (!staff.user_id) continue
+
+          await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: staff.user_id,
+              title: accepted ? "progress.acceptedNotificationTitle" : "progress.declinedNotificationTitle",
+              message: accepted ? "progress.acceptedNotificationMessage" : "progress.declinedNotificationMessage",
+              metadata: { beneficiary: user?.name || "Un Beneficiario" },
+              type: "campaign",
+            }),
+          })
+        }
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify corporation:", notifyErr)
+    }
+  }
+
   const handleAccept = async (id: number) => {
     setProcessingId(id)
     try {
@@ -51,6 +83,7 @@ export default function ProgressPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "active" }),
       })
+      await notifyCorporation(id, true)
       await fetchEnrollments()
     } catch (err) {
       console.error("Error accepting invitation:", err)
@@ -65,6 +98,7 @@ export default function ProgressPage() {
       await fetch(`/api/campaign-beneficiaries/${id}`, {
         method: "DELETE",
       })
+      await notifyCorporation(id, false)
       await fetchEnrollments()
     } catch (err) {
       console.error("Error declining invitation:", err)

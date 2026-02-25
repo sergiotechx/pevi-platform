@@ -306,6 +306,10 @@ export const en: Record<string, string> = {
   "progress.accept": "Accept Invitation",
   "progress.decline": "Decline",
   "progress.reward": "Reward: {{amount}} USDC",
+  "progress.acceptedNotificationTitle": "Invitation Accepted",
+  "progress.acceptedNotificationMessage": "{{beneficiary}} has accepted the invitation to your campaign.",
+  "progress.declinedNotificationTitle": "Invitation Declined",
+  "progress.declinedNotificationMessage": "{{beneficiary}} has declined the invitation to your campaign.",
 
   // Verified
   "verified.title": "Audit History",
