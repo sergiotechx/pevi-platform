@@ -135,10 +135,17 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Organization - Middle Left */}
+          {/* Organization - Left Side */}
           <OrganizationCard />
+        </div>
 
-          {/* Security / Password - Bottom Left */}
+        <div className="flex flex-col gap-6">
+          {/* Wallet - Right Side */}
+          <div className="h-full">
+            <WalletConnect />
+          </div>
+
+          {/* Security / Password - Right Side */}
           <Card className="border-base-300/50">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -183,11 +190,6 @@ export default function ProfilePage() {
               </form>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Wallet - Right Side */}
-        <div className="h-full">
-          <WalletConnect />
         </div>
       </div>
     </div>

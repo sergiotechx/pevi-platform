@@ -58,6 +58,7 @@ export const campaignIncludes = {
     milestones: true,
     campaignBeneficiaries: true,
     campaignStaff: true,
+    donations: true,
   },
   full: {
     organization: true,
@@ -81,6 +82,7 @@ export const campaignIncludes = {
         },
       },
     },
+    donations: true,
   },
 }
 

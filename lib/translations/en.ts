@@ -142,6 +142,13 @@ export const en: Record<string, string> = {
   "campaigns.beneficiaries": "{{count}} beneficiaries",
   "campaigns.milestonesDone": "{{done}}/{{total}} milestones done",
   "campaigns.donate": "Donate",
+  "campaigns.funded": "Funded: {{amount}} USDC",
+  "campaigns.releaseFunds": "Release Funds",
+  "campaigns.releaseFundsNotice": "3 wallet signatures will be required to complete the release.",
+  "campaigns.releaseFundsSuccess": "Funds successfully released to the beneficiary 🎉",
+  "campaigns.payoutSuccess": "Payment sent successfully to all beneficiaries.",
+  "campaigns.payoutStepNotice": "Step 4: Sending funds to beneficiaries",
+  "campaigns.payoutFailure": "Funds released to your wallet. Remember to send them manually if you didn't sign the last step.",
 
   // Donation modal
   "donation.title": "Donate to Campaign",

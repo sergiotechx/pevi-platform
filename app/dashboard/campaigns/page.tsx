@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { PlusCircle, Heart } from "lucide-react"
+import { PlusCircle, Heart, Unlock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/status-badge"
 import { useTranslation } from "@/lib/i18n-context"
 import { useAuth } from "@/lib/auth-context"
 import { DonationModal } from "@/components/donation-modal"
+import { toast } from "sonner"
 
 type MilestoneItem = { milestone_id: number; status: string | null }
 type BeneficiaryItem = { campaignBeneficiary_id: number }
@@ -21,6 +22,7 @@ type CampaignItem = {
   escrowId: string | null
   milestones?: MilestoneItem[]
   campaignBeneficiaries?: BeneficiaryItem[]
+  donations?: { amount: number | string }[]
 }
 
 export default function CampaignsPage() {
@@ -31,6 +33,7 @@ export default function CampaignsPage() {
   const [donatingCampaign, setDonatingCampaign] = useState<{ id: string; name: string; escrowId?: string } | null>(null)
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [releasing, setReleasing] = useState<number | null>(null)
 
   useEffect(() => {
     fetch(`/api/campaigns?include=full`)
@@ -60,6 +63,151 @@ export default function CampaignsPage() {
       console.error("Error updating status:", error)
     }
   }
+
+  const handleReleaseFunds = async (campaignId: number, escrowId: string) => {
+    if (!user?.walletAddress) {
+      toast.error("Debes conectar tu billetera de Corporation para liberar fondos.")
+      return
+    }
+    setReleasing(campaignId)
+
+    const signStep = async (stepName: string, label: string): Promise<string | null> => {
+      const { signTransaction } = await import("@stellar/freighter-api")
+      const res = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user!.walletAddress, step: stepName })
+      })
+      const data = await res.json()
+      if (!data.unsignedXdr) {
+        toast.error(`Error de liberación (${label}): ` + (data.error || "Sin XDR"))
+        return null
+      }
+
+      const networkPassphrase = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "mainnet"
+        ? "Public Global Stellar Network ; September 2015"
+        : "Test SDF Network ; September 2015"
+
+      const signed = await signTransaction(data.unsignedXdr, { networkPassphrase })
+      if (signed.error) {
+        const isCancelled =
+          (typeof signed.error === "object" && Object.keys(signed.error as object).length === 0) ||
+          (typeof signed.error === "string" && /reject|cancel|decline/i.test(signed.error))
+        toast.error(isCancelled ? "Transacción cancelada." : `Error firmando (${label}): ${signed.error}`)
+        return null
+      }
+      return signed.signedTxXdr
+    }
+
+    try {
+      // Step 1: change-milestone-status
+      const signedChange = await signStep("change_status", "cambio de estado")
+      if (!signedChange) return
+
+      const submitChange = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user.walletAddress, step: "submit_change", signed_xdr: signedChange })
+      })
+      const submitChangeData = await submitChange.json()
+      if (!submitChangeData.ok && submitChangeData.error) {
+        toast.error("Error enviando estado: " + submitChangeData.error)
+        return
+      }
+
+      // Step 2: approve-milestone (skip if already approved from a prior attempt)
+      const approveRes = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user.walletAddress, step: "approve" })
+      })
+      const approveData = await approveRes.json()
+
+      if (!approveData.alreadyApproved) {
+        if (!approveData.unsignedXdr) {
+          toast.error("Error de liberación (aprobación): " + (approveData.error || "Sin XDR"))
+          return
+        }
+        const { signTransaction } = await import("@stellar/freighter-api")
+        const networkPassphrase = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "mainnet"
+          ? "Public Global Stellar Network ; September 2015"
+          : "Test SDF Network ; September 2015"
+        const signedApprove = await signTransaction(approveData.unsignedXdr, { networkPassphrase })
+        if (signedApprove.error) {
+          const isCancelled =
+            (typeof signedApprove.error === "object" && Object.keys(signedApprove.error as object).length === 0) ||
+            (typeof signedApprove.error === "string" && /reject|cancel|decline/i.test(signedApprove.error))
+          toast.error(isCancelled ? "Transacción cancelada." : `Error firmando (aprobación): ${signedApprove.error}`)
+          return
+        }
+        const submitApprove = await fetch("/api/escrow/release", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user.walletAddress, step: "submit_approve", signed_xdr: signedApprove.signedTxXdr })
+        })
+        const submitApproveData = await submitApprove.json()
+        if (!submitApproveData.ok && submitApproveData.error) {
+          toast.error("Error enviando aprobación: " + submitApproveData.error)
+          return
+        }
+      }
+
+      // Step 3: release-funds
+      const signedRelease = await signStep("release", "liberación")
+      if (!signedRelease) return
+
+      const submitRelease = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user.walletAddress, step: "submit_release", signed_xdr: signedRelease })
+      })
+      const submitReleaseData = await submitRelease.json()
+      if (submitReleaseData.error) {
+        toast.error("Error enviando liberación: " + submitReleaseData.error)
+        return
+      }
+
+      // Step 4: Final Payout to Beneficiaries
+      const signedPayout = await signStep("prepare_payout", "pago a beneficiarios")
+      if (!signedPayout) {
+        toast.info(t("campaigns.payoutFailure"))
+        return
+      }
+
+      const submitPayout = await fetch("/api/escrow/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escrow_id: escrowId, approver_public_key: user.walletAddress, step: "submit_payout", signed_xdr: signedPayout })
+      })
+      const submitPayoutData = await submitPayout.json()
+      if (submitPayoutData.error) {
+        toast.error("Error enviando pago final: " + submitPayoutData.error)
+        return
+      }
+
+      toast.success(t("campaigns.payoutSuccess"))
+
+      // Mark campaign as completed ONLY after final payout is successful
+      try {
+        await fetch(`/api/campaigns/${campaignId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed" })
+        })
+      } catch (e) {
+        console.error("Failed to update campaign status", e)
+      }
+      setCampaigns((prev) =>
+        prev.map((c) => (c.campaign_id === campaignId ? { ...c, status: "completed" } : c))
+      )
+
+    } catch (err: any) {
+      alert("Excepción liberando fondos: " + err.message)
+    } finally {
+      setReleasing(null)
+    }
+  }
+
 
   const visibleCampaigns = canCreate ? campaigns : campaigns.filter((c) => c.status !== "draft")
 
@@ -128,17 +276,41 @@ export default function CampaignsPage() {
                       </Button>
                     </div>
                   )}
+                  {canCreate && c.status === "active" && c.escrowId && milestones.length > 0 && done === milestones.length && (
+                    <div className="flex flex-col items-end gap-1">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        disabled={releasing === c.campaign_id}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700 shadow-md font-bold"
+                        onClick={() => handleReleaseFunds(c.campaign_id, c.escrowId as string)}
+                      >
+                        <Unlock className="mr-2 h-4 w-4" />
+                        {releasing === c.campaign_id ? t("common.loading") : t("campaigns.releaseFunds")}
+                      </Button>
+                      <p className="text-xs text-base-content/50 text-right max-w-[200px]">
+                        {t("campaigns.releaseFundsNotice")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-base-content/60">{c.description}</p>
                 <div className="mt-3 flex items-center gap-4 text-xs text-base-content/60">
-                  <span>
-                    {t("campaigns.budget", {
-                      amount: (c.cost ?? 0).toLocaleString(),
-                      currency: "USDC",
-                    })}
-                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-base-content">
+                      {t("campaigns.budget", {
+                        amount: (c.cost ?? 0).toLocaleString(),
+                        currency: "USDC",
+                      })}
+                    </span>
+                    <span className="text-[10px] text-base-content/50">
+                      {t("campaigns.funded", {
+                        amount: ((c.donations ?? []).reduce((acc, d) => acc + Number(d.amount), 0)).toLocaleString()
+                      })}
+                    </span>
+                  </div>
                   <span>
                     {t("campaigns.beneficiaries", { count: c.campaignBeneficiaries?.length ?? 0 })}
                   </span>

@@ -65,7 +65,17 @@ export function DonationModal({ campaignId, campaignName, escrowId, onClose, onS
         setLoading(true)
         if (txRes.error) {
           console.error("Transaction failed:", txRes.error)
-          setError(txRes.error)
+
+          const isCancelled =
+            (typeof txRes.error === "object" && Object.keys(txRes.error).length === 0) ||
+            (typeof txRes.error === "string" && /reject|cancel|decline/i.test(txRes.error))
+
+          if (isCancelled) {
+            setError("Transacción cancelada.")
+          } else {
+            setError(typeof txRes.error === "string" ? txRes.error : "Error en la transacción.")
+          }
+
           setLoading(false)
           return
         }

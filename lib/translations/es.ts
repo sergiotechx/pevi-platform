@@ -142,6 +142,13 @@ export const es: Record<string, string> = {
   "campaigns.beneficiaries": "{{count}} beneficiarios",
   "campaigns.milestonesDone": "{{done}}/{{total}} hitos completados",
   "campaigns.donate": "Donar",
+  "campaigns.funded": "Fondeado: {{amount}} USDC",
+  "campaigns.releaseFunds": "Liberar Fondos",
+  "campaigns.releaseFundsNotice": "Se requerirán 3 firmas de tu wallet para completar la liberación.",
+  "campaigns.releaseFundsSuccess": "Fondos liberados exitosamente al beneficiario 🎉",
+  "campaigns.payoutSuccess": "Pago enviado exitosamente a todos los beneficiarios.",
+  "campaigns.payoutStepNotice": "Paso 4: Envío de fondos a beneficiarios",
+  "campaigns.payoutFailure": "Fondos liberados a tu wallet. Recuerda enviarlos manualmente si no firmaste el último paso.",
 
   // Modal de donación
   "donation.title": "Donar a Campaña",

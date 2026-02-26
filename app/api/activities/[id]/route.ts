@@ -105,11 +105,18 @@ export async function PUT(
         })
 
         if (fullActivity?.milestone && fullActivity?.campaignBeneficiary) {
-          const milestoneName = fullActivity.milestone.name || `Milestone ${fullActivity.milestone.milestone_id}`
+          const milestoneId = fullActivity.milestone.milestone_id
+          const milestoneName = fullActivity.milestone.name || `Milestone ${milestoneId}`
           const campaignTitle = fullActivity.milestone.campaign.title
           const beneficiaryUser = fullActivity.campaignBeneficiary.user
           const organizationStaff = fullActivity.milestone.campaign.organization?.organizationStaff || []
           const notifications = []
+
+          // If the activity is fully approved, also approve the parent milestone
+          await prisma.milestone.update({
+            where: { milestone_id: milestoneId },
+            data: { status: "approved" }
+          })
 
           // Notify Beneficiary
           if (beneficiaryUser) {
@@ -133,7 +140,7 @@ export async function PUT(
                 message: "notifications.corpMilestoneApprovedMessage",
                 metadata: { milestone: milestoneName, beneficiary: beneficiaryUser?.fullName || "Un beneficiario" },
                 type: "milestone",
-                actionUrl: "/dashboard/explore", // Generic, could be /dashboard/campaigns
+                actionUrl: "/dashboard/campaigns",
                 actionLabel: "notifications.viewCampaign"
               })
             }

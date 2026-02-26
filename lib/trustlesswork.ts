@@ -1,3 +1,5 @@
+import * as StellarSdk from "@stellar/stellar-sdk"
+
 const BASE_URL = process.env.TRUSTLESSWORK_BASE_URL!
 const API_KEY = process.env.TRUSTLESSWORK_API_KEY!
 
@@ -27,33 +29,29 @@ export async function createEscrow(params: {
     platformAddress: string
     title: string
     description: string
-}): Promise<{ contractId?: string; unsignedTransaction?: string; status?: string }> {
-    const payload = {
-        signer: params.approver,
-        engagementId: `milestone-${params.milestoneId}`,
-        title: params.title || `Milestone ${params.milestoneId}`,
-        description: params.description || `Escrow for milestone ${params.milestoneId}`,
-        roles: {
-            approver: params.approver,
-            serviceProvider: params.serviceProvider,
-            platformAddress: params.platformAddress,
-            releaseSigner: params.approver,
-            disputeResolver: params.platformAddress,
-            receiver: params.serviceProvider
-        },
-        amount: params.amount,
-        platformFee: 0,
-        milestones: [{ description: params.description || `Escrow for milestone ${params.milestoneId}` }],
-        trustline: {
-            address: params.currency === "XLM" ? "native" : USDC_ISSUER,
-            symbol: params.currency || "USDC"
-        }
-    }
-
-    const res = await fetch(`${BASE_URL}/deployer/single-release`, {
+}) {
+    const res = await fetch(`${BASE_URL}/escrow/single-release`, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+            signer: params.approver,
+            engagementId: params.milestoneId.toString(),
+            title: params.title,
+            description: params.description,
+            amount: params.amount,
+            platformFee: 0,
+            roles: {
+                approver: params.approver,
+                serviceProvider: params.serviceProvider,
+                platformAddress: params.platformAddress,
+                releaseSigner: params.approver,
+                disputeResolver: params.platformAddress,
+            },
+            trustline: {
+                address: params.currency === "XLM" ? "native" : USDC_ISSUER,
+                symbol: params.currency || "USDC"
+            }
+        })
     })
     if (!res.ok) {
         const errorText = await res.text()
@@ -127,10 +125,56 @@ export async function fundEscrow(params: {
     return res.json()
 }
 
+export async function changeMilestoneStatus(params: {
+    escrowId: string
+    milestoneIndex: string
+    newEvidence: string
+    newStatus: "Completed" | "Pending"
+    serviceProviderPublicKey: string
+}): Promise<{ unsignedTransaction?: string }> {
+    const res = await fetch(`${BASE_URL}/escrow/single-release/change-milestone-status`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            contractId: params.escrowId,
+            milestoneIndex: params.milestoneIndex,
+            newEvidence: params.newEvidence,
+            newStatus: params.newStatus,
+            serviceProvider: params.serviceProviderPublicKey
+        }),
+    })
+    if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Trustless Work changeMilestoneStatus failed: ${res.statusText} - ${errorText}`)
+    }
+    return res.json()
+}
+
+export async function approveMilestone(params: {
+    escrowId: string
+    milestoneIndex: string
+    approverPublicKey: string
+}): Promise<{ unsignedTransaction?: string }> {
+    const res = await fetch(`${BASE_URL}/escrow/single-release/approve-milestone`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            contractId: params.escrowId,
+            milestoneIndex: params.milestoneIndex,
+            approver: params.approverPublicKey
+        }),
+    })
+    if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Trustless Work approveMilestone failed: ${res.statusText} - ${errorText}`)
+    }
+    return res.json()
+}
+
 export async function releaseEscrow(params: {
     escrowId: string
     approverPublicKey: string
-}): Promise<{ contractId?: string; signedXdr?: string }> {
+}): Promise<{ contractId?: string; unsignedTransaction?: string }> {
     const res = await fetch(`${BASE_URL}/escrow/single-release/release-funds`, {
         method: "POST",
         headers,
@@ -155,11 +199,8 @@ export async function getEscrowStatus(escrowId: string): Promise<EscrowStatus> {
     return res.json()
 }
 export async function getEscrowByEngagementId(engagementId: string): Promise<any> {
-    console.log(`[TW-API] Fetching escrow for EngagementID: ${engagementId}`)
     const res = await fetch(`${BASE_URL}/escrow/engagement/${engagementId}`, { headers })
     if (!res.ok) {
-        const errorText = await res.text()
-        console.warn(`[TW-API] Failed to fetch escrow for ${engagementId}: ${res.status} ${errorText}`)
         return null
     }
     return res.json()
@@ -171,7 +212,6 @@ export async function sendTransaction(signedXdr: string): Promise<any> {
         headers,
         body: JSON.stringify({ signedXdr })
     })
-    console.log(`[TW-DEBUG] sendTransaction: sending XDR (length: ${signedXdr?.length})`)
     if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`Trustless Work sendTransaction failed: ${res.statusText} - ${errorText}`)
@@ -179,3 +219,59 @@ export async function sendTransaction(signedXdr: string): Promise<any> {
     return res.json()
 }
 
+export async function submitStellarTransaction(signedXdr: string): Promise<any> {
+    const serverUrl = STELLAR_NETWORK === "mainnet"
+        ? "https://horizon.stellar.org"
+        : "https://horizon-testnet.stellar.org"
+    const server = new StellarSdk.Horizon.Server(serverUrl)
+
+    try {
+        const transaction = StellarSdk.TransactionBuilder.fromXDR(
+            signedXdr,
+            STELLAR_NETWORK === "mainnet" ? StellarSdk.Networks.PUBLIC : StellarSdk.Networks.TESTNET
+        )
+        const response = await server.submitTransaction(transaction as any)
+        return response
+    } catch (e: any) {
+        const resultCodes = e.response?.data?.extras?.result_codes
+        const errorDesc = resultCodes
+            ? `Tx: ${resultCodes.transaction}, Ops: ${resultCodes.operations?.join(',')}`
+            : e.message
+        throw new Error(`Stellar network submission failed: ${errorDesc}`)
+    }
+}
+
+export async function preparePayoutTx(params: {
+    sourcePublicKey: string
+    payouts: { destination: string; amount: string }[]
+    currency: string
+}): Promise<{ unsignedXdr: string }> {
+    const serverUrl = STELLAR_NETWORK === "mainnet"
+        ? "https://horizon.stellar.org"
+        : "https://horizon-testnet.stellar.org"
+    const server = new StellarSdk.Horizon.Server(serverUrl)
+
+    const sourceAccount = await server.loadAccount(params.sourcePublicKey)
+
+    let transactionBuilder = new StellarSdk.TransactionBuilder(sourceAccount, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase: STELLAR_NETWORK === "mainnet" ? StellarSdk.Networks.PUBLIC : StellarSdk.Networks.TESTNET
+    })
+
+    const asset = params.currency === "XLM"
+        ? StellarSdk.Asset.native()
+        : new StellarSdk.Asset(params.currency, USDC_ISSUER)
+
+    for (const payout of params.payouts) {
+        transactionBuilder = transactionBuilder.addOperation(
+            StellarSdk.Operation.payment({
+                destination: payout.destination,
+                asset: asset,
+                amount: payout.amount
+            })
+        )
+    }
+
+    const transaction = transactionBuilder.setTimeout(300).build() // timeout in 5 minutes
+    return { unsignedXdr: transaction.toXDR() }
+}

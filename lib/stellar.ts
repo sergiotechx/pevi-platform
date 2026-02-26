@@ -58,6 +58,8 @@ export async function signAndSubmitTransaction(xdr: string): Promise<{ hash?: st
       ? "Public Global Stellar Network ; September 2015"
       : "Test SDF Network ; September 2015"
 
+    // Ensure connection is allowed before signing
+    await setAllowed()
     const signedResult = await signTransaction(xdr, { networkPassphrase })
 
     if (signedResult.error) {

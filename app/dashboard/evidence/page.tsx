@@ -46,17 +46,20 @@ export default function EvidencePage() {
   const slots: Slot[] = enrollments
     .filter(e => e.status === "active")
     .flatMap((e) =>
-      (e.campaign.milestones ?? []).map((m) => {
-        const activity = e.activities?.find((a) => a.milestone_id === m.milestone_id)
-        return {
-          key: `${e.campaignBeneficiary_id}-${m.milestone_id}`,
-          campaignTitle: e.campaign.title,
-          milestoneName: m.name ?? "",
-          milestoneId: m.milestone_id,
-          campaignBeneficiaryId: e.campaignBeneficiary_id,
-          activityId: activity?.activity_id,
-        }
-      })
+      (e.campaign.milestones ?? [])
+        .map((m) => {
+          const activity = e.activities?.find((a) => a.milestone_id === m.milestone_id)
+          return {
+            key: `${e.campaignBeneficiary_id}-${m.milestone_id}`,
+            campaignTitle: e.campaign.title,
+            milestoneName: m.name ?? "",
+            milestoneId: m.milestone_id,
+            campaignBeneficiaryId: e.campaignBeneficiary_id,
+            activityId: activity?.activity_id,
+            hasEvidence: !!(activity?.evidence_ref || activity?.activity_observation),
+          }
+        })
+        .filter((slot) => !slot.hasEvidence)
     )
 
   const submittedActivities = enrollments.flatMap((e) => (e.activities ?? []).filter((a) => a.evidence_ref || a.activity_observation))

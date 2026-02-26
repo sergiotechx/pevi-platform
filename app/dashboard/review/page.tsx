@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n-context"
+import { signAndSubmitTransaction } from "@/lib/stellar"
 
 interface ActivityRow {
   activity_id: number
@@ -89,6 +90,49 @@ export default function ReviewPage() {
     setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: true, saved: false } }))
     const es = form[activityId].evidence_status
     const original = activities.find((a) => a.activity_id === activityId)
+
+    if (es === "approved") {
+      if (!user?.walletAddress) {
+        console.error("No wallet connected")
+        alert("Debes conectar tu billetera para aprobar hitos.")
+        setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+        return
+      }
+
+      try {
+        const proofRes = await fetch("/api/evaluator/proof", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_id: activityId,
+            evaluator_address: user.walletAddress
+          })
+        })
+        const proofData = await proofRes.json()
+
+        if (proofData.xdr) {
+          const txRes = await signAndSubmitTransaction(proofData.xdr)
+
+          if (txRes.error) {
+            console.error("Signature failed:", txRes.error)
+            alert(`Error al firmar: ${txRes.error}`)
+            setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+            return
+          }
+        } else {
+          console.error("No XDR returned:", proofData)
+          alert("Error al generar transacción de prueba.")
+          setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+          return
+        }
+      } catch (err) {
+        console.error("Failed to generate/sign proof:", err)
+        alert("Fallo al firmar la aprobación on-chain.")
+        setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: false } }))
+        return
+      }
+    }
+
     const body: Record<string, string> = {
       evidence_status: es,
       evaluation_note: form[activityId].evaluation_note,
@@ -105,7 +149,13 @@ export default function ReviewPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
-    setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: true } }))
+
+    // If the activity was approved, remove it from the pending view immediately
+    if (es === "approved") {
+      setActivities((prev) => prev.filter(a => a.activity_id !== activityId))
+    } else {
+      setForm((prev) => ({ ...prev, [activityId]: { ...prev[activityId], saving: false, saved: true } }))
+    }
   }
 
   const campaignIds = Object.keys(grouped).map(Number)

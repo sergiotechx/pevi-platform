@@ -78,8 +78,24 @@ export default function CreateCampaignPage() {
       if (campaign.unsignedTransaction) {
         setSubmitting(true) // Keep loading state
         const signResult = await signTransactionOnly(campaign.unsignedTransaction)
+
         if (signResult.error) {
-          setError(`Firma requerida: ${signResult.error === "User declined to sign the transaction" ? "Operación cancelada por el usuario" : signResult.error}`)
+          // Si el usuario cancela o falla la firma, eliminamos la campaña creada para evitar basura en la DB
+          try {
+            await fetch(`/api/campaigns/${campaign.campaign_id}`, { method: "DELETE" })
+          } catch (rollbackErr) {
+            console.error("Rollback failed:", rollbackErr)
+          }
+
+          const isCancelled =
+            (typeof signResult.error === "object" && Object.keys(signResult.error as object).length === 0) ||
+            (typeof signResult.error === "string" && /reject|cancel|decline/i.test(signResult.error))
+
+          const errorMsg = isCancelled
+            ? "Operación cancelada por el usuario"
+            : `Error de firma: ${typeof signResult.error === 'string' ? signResult.error : JSON.stringify(signResult.error)}`
+
+          setError(errorMsg)
           setSubmitting(false)
           return
         }
@@ -94,6 +110,9 @@ export default function CreateCampaignPage() {
         if (!submitRes.ok) {
           const submitError = await submitRes.json()
           setError(`Error al enviar contrato: ${submitError.error || "Error desconocido"}`)
+          // Opcional: ¿Deberíamos borrar la campaña también si falla el envío final? 
+          // Probablemente sí, para ser consistentes.
+          await fetch(`/api/campaigns/${campaign.campaign_id}`, { method: "DELETE" }).catch(() => { })
           setSubmitting(false)
           return
         }
@@ -143,8 +162,8 @@ export default function CreateCampaignPage() {
 
       setSuccess(true)
       setTimeout(() => router.push("/dashboard/campaigns"), 1500)
-    } catch {
-      setError("An unexpected error occurred")
+    } catch (err: any) {
+      setError(`An unexpected error occurred: ${err.message}`)
     } finally {
       setSubmitting(false)
     }
